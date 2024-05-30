@@ -16,11 +16,11 @@ clone_repo()
 
   git clone https://github.com/OpenXiangShan/qemu.git -b checkpoint $QEMU_HOME
 
-  git clone https://github.com/OpenXiangShan/NEMU.git -b master nemu_rv64gc_checkpoint $NEMU_HOME
+  git clone https://github.com/OpenXiangShan/NEMU.git -b master $NEMU_HOME
 
   cd nemu_rv64gc_checkpoint && git submodule update --init
 
-  git clone https://github.com/OpenXiangShan/NEMU.git -b gcpt_new_mem_layout nemu_rv64gcvh_checkpoint nemu_rv64gcvh_checkpoint
+  git clone https://github.com/OpenXiangShan/NEMU.git -b gcpt_new_mem_layout nemu_rv64gcvh_checkpoint
 
   cd nemu_rv64gcvh_checkpoint && git submodule update --init
 }
