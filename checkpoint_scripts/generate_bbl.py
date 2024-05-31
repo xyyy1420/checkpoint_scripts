@@ -8,9 +8,9 @@ def build_spec_bbl(spec, build_log_folder, spec_bin_folder, bin_suffix, assembly
     print(f"build {spec}-bbl-linux-spec...")
 
     with open(
-        os.path.join(build_log_folder, f"build-{spec}-out.log"), "w"
+        os.path.join(build_log_folder, f"build-{spec}-out.log"), "w", encoding="utf-8"
     ) as out, open(
-        os.path.join(build_log_folder, f"build-{spec}-err.log"), "w"
+        os.path.join(build_log_folder, f"build-{spec}-err.log"), "w", encoding="utf-8"
     ) as err:
         pk_folder=os.environ.get("RISCV_PK_HOME")
         if pk_folder is None or not os.path.exists(pk_folder):
@@ -18,11 +18,11 @@ def build_spec_bbl(spec, build_log_folder, spec_bin_folder, bin_suffix, assembly
             exit(-1)
 
         res = subprocess.run(
-            ["make", "clean"], cwd=pk_folder, stdout=out, stderr=err
+            ["make", "clean"], cwd=pk_folder, stdout=out, stderr=err, check=False
         )
         res.check_returncode()
         res = subprocess.run(
-            ["make", "-j70"], cwd=pk_folder, stdout=out, stderr=err
+            ["make", "-j70"], cwd=pk_folder, stdout=out, stderr=err, check=False
         )
         res.check_returncode()
 
@@ -56,11 +56,11 @@ def build_bbl_as_gcpt_payload(spec, build_log_folder, spec_bin_folder, bin_suffi
     with open(
         os.path.join(
             build_log_folder, f"build-{spec}-aspayload-out.log"
-        ), "w"
+        ), "w", encoding="utf-8"
     ) as out, open(
         os.path.join(
             build_log_folder, f"build-{spec}-aspayload-err.log"
-        ), "w"
+        ), "w", encoding="utf-8"
     ) as err:
 
         res = subprocess.run(
@@ -69,7 +69,8 @@ def build_bbl_as_gcpt_payload(spec, build_log_folder, spec_bin_folder, bin_suffi
                 os.environ.get("NEMU_HOME"), "resource", "gcpt_restore"
             ),
             stdout=out,
-            stderr=err
+            stderr=err,
+            check=False
         )
         res.check_returncode()
 
@@ -89,7 +90,8 @@ def build_bbl_as_gcpt_payload(spec, build_log_folder, spec_bin_folder, bin_suffi
                 os.environ.get("NEMU_HOME"), "resource", "gcpt_restore"
             ),
             stdout=out,
-            stderr=err
+            stderr=err,
+            check=False
         )
         res.check_returncode()
 

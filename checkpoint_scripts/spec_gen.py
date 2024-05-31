@@ -59,8 +59,7 @@ def get_cpu2006_info(cpu2006_run_dir, elf_folder, elf_suffix):
             f"{cpu2006_run_dir}/calculix/hyperviscoplastic.inp",
             f"{cpu2006_run_dir}/calculix/hyperviscoplastic.sta"
         ], ["-i", "hyperviscoplastic"], ["fp", "ref"]),
-        "dealII": ([
-            f"{elf_folder}/dealII" + elf_suffix,
+        "dealII": ([ f"{elf_folder}/dealII" + elf_suffix,
             f"{cpu2006_run_dir}/dealII/DummyData"
         ], ["23"], ["fp", "ref"]),
         "gamess_cytosine": ([
@@ -378,7 +377,7 @@ def get_cpu2017_info(cpu2017_run_dir, elf_folder, elf_suffix):
         ], [], ["fp", "ref"]),
         "gcc_pp_O2": ([
             f"{elf_folder}/gcc" + elf_suffix,
-            f"./cpu2017_run_dir/gcc/ref32.c",
+            f"{cpu2017_run_dir}/gcc/ref32.c",
             f"{cpu2017_run_dir}/gcc/control",
             f"{cpu2017_run_dir}/gcc/gcc-pp.c",
             f"{cpu2017_run_dir}/gcc/gcc-pp.opts-O3_-finline-limit_0_-fif-conversion_-fif-conversion2.s",
@@ -389,7 +388,7 @@ def get_cpu2017_info(cpu2017_run_dir, elf_folder, elf_suffix):
         ], ["fp", "ref"]),
         "gcc_pp_O3": ([
             f"{elf_folder}/gcc" + elf_suffix,
-            f"./cpu2017_run_dir/gcc/ref32.c",
+            f"{cpu2017_run_dir}/gcc/ref32.c",
             f"{cpu2017_run_dir}/gcc/control",
             f"{cpu2017_run_dir}/gcc/gcc-pp.c",
             f"{cpu2017_run_dir}/gcc/gcc-pp.opts-O3_-finline-limit_0_-fif-conversion_-fif-conversion2.s",
@@ -401,7 +400,7 @@ def get_cpu2017_info(cpu2017_run_dir, elf_folder, elf_suffix):
         ], ["fp", "ref"]),
         "gcc_ref32_O3": ([
             f"{elf_folder}/gcc" + elf_suffix,
-            f"./cpu2017_run_dir/gcc/ref32.c",
+            f"{cpu2017_run_dir}/gcc/ref32.c",
             f"{cpu2017_run_dir}/gcc/control",
             f"{cpu2017_run_dir}/gcc/gcc-pp.c",
             f"{cpu2017_run_dir}/gcc/gcc-pp.opts-O3_-finline-limit_0_-fif-conversion_-fif-conversion2.s",
@@ -413,7 +412,7 @@ def get_cpu2017_info(cpu2017_run_dir, elf_folder, elf_suffix):
         ], ["fp", "ref"]),
         "gcc_ref32_O5": ([
             f"{elf_folder}/gcc" + elf_suffix,
-            f"./cpu2017_run_dir/gcc/ref32.c",
+            f"{cpu2017_run_dir}/gcc/ref32.c",
             f"{cpu2017_run_dir}/gcc/control",
             f"{cpu2017_run_dir}/gcc/gcc-pp.c",
             f"{cpu2017_run_dir}/gcc/gcc-pp.opts-O3_-finline-limit_0_-fif-conversion_-fif-conversion2.s",
@@ -421,7 +420,7 @@ def get_cpu2017_info(cpu2017_run_dir, elf_folder, elf_suffix):
         ], ["ref32.c", "-O5", "-o", "ref32.opts-O5.s"], ["fp", "ref"]),
         "gcc_small_O3": ([
             f"{elf_folder}/gcc" + elf_suffix,
-            f"./cpu2017_run_dir/gcc/ref32.c",
+            f"{cpu2017_run_dir}/gcc/ref32.c",
             f"{cpu2017_run_dir}/gcc/control",
             f"{cpu2017_run_dir}/gcc/gcc-pp.c",
             f"{cpu2017_run_dir}/gcc/gcc-pp.opts-O3_-finline-limit_0_-fif-conversion_-fif-conversion2.s",
@@ -451,7 +450,8 @@ def get_cpu2017_info(cpu2017_run_dir, elf_folder, elf_suffix):
         ], ["ref.sgf"], ["int", "ref"]),
         "mcf": ([
             f"{elf_folder}/mcf" + elf_suffix, 
-            f"{cpu2017_run_dir}/mcf/control", f"./cpu2017_run_dir/mcf/inp.in"
+            f"{cpu2017_run_dir}/mcf/control", 
+            f"{cpu2017_run_dir}/mcf/inp.in"
         ], ["inp.in"], ["int", "ref"]),
         "nab": ([
             f"{elf_folder}/nab" + elf_suffix, 
@@ -3742,7 +3742,8 @@ def get_cpu2017_info(cpu2017_run_dir, elf_folder, elf_suffix):
             f"{cpu2017_run_dir}/wrf/namelist.input",
             f"{cpu2017_run_dir}/wrf/ETAMPNEW_DATA",
             f"{cpu2017_run_dir}/wrf/wrfbdy_d01",
-            f"{cpu2017_run_dir}/wrf/tr49t85", f"./cpu2017_run_dir/wrf/tr49t67",
+            f"{cpu2017_run_dir}/wrf/tr49t85",
+            f"{cpu2017_run_dir}/wrf/tr49t67",
             f"{cpu2017_run_dir}/wrf/ozone_lat.formatted",
             f"{cpu2017_run_dir}/wrf/gribmap.txt",
             f"{cpu2017_run_dir}/wrf/OBS_DOMAIN101",
@@ -3796,6 +3797,7 @@ def get_cpu2017_info(cpu2017_run_dir, elf_folder, elf_suffix):
             f"{cpu2017_run_dir}/x264_seek/frame_600.yuv",
             f"{cpu2017_run_dir}/x264_seek/x264_stats.log.mbtree",
             f"{cpu2017_run_dir}/x264_seek/frame_800.yuv"
+            f"{cpu2017_run_dir}/x264/BuckBunny.yuv",
         ], [
             "--seek", "500", "--dumpyuv", "200", "--frames", "1250", "-o",
             "BuckBunny_New.264", "BuckBunny.yuv", "1280x720"
@@ -3809,7 +3811,7 @@ def get_cpu2017_info(cpu2017_run_dir, elf_folder, elf_suffix):
         ], ["-v", "t5.xml xalanc.xsl"], ["int", "ref"]),
         "xz_cld": ([
             f"{elf_folder}/xz" + elf_suffix,
-            f"./cpu2017_run_dir/xz/control",
+            f"{cpu2017_run_dir}/xz/control",
             f"{cpu2017_run_dir}/xz/input.combined.xz",
             f"{cpu2017_run_dir}/xz/cld.tar.xz",
             f"{cpu2017_run_dir}/xz/cpu2006docs.tar.xz"
@@ -3893,19 +3895,14 @@ def traverse_path(path, stack=""):
 
 
 # original func is: https://github.com/OpenXiangShan/riscv-rootfs/blob/c61a659b454e5b038b5374a9091b29ad4995f13f/rootfsimg/spec_gen.py#L558
-def generate_initramfs(scripts_folder, elf_folder, spec, elf_suffix, dest_path, CPU2017=False):
+def generate_initramfs(scripts_folder, elf_folder, spec, elf_suffix, dest_path, cpu2017=True):
     print("elf folder {}".format(elf_folder))
     print("spec {}".format(spec))
     print("dest_path {}".format(dest_path))
     lines = get_default_initramfs_file().copy()
-    if CPU2017:
-        spec_files = get_cpu2017_info(os.environ.get("CPU2017_RUN_DIR"),
-                                   elf_folder,
-                                   elf_suffix)[spec][0]
-    else:
-        spec_files = get_cpu2006_info(os.environ.get("CPU2006_RUN_DIR"),
-                                   elf_folder,
-                                   elf_suffix)[spec][0]
+    spec_files = get_cpu2017_info(os.environ.get("CPU2017_RUN_DIR"),
+                               elf_folder,
+                               elf_suffix)[spec][0]
     for i, filename in enumerate(spec_files):
         if len(filename.split()) == 1:
             # print(f"default {filename} to file 755 0 0")
@@ -3925,11 +3922,11 @@ def generate_initramfs(scripts_folder, elf_folder, spec, elf_suffix, dest_path, 
                 lines.append(f"file /spec/{name}/{file} {path}/{file} 755 0 0")
         else:
             print(f"unknown filename: {filename}")
-    with open(os.path.join(dest_path, "initramfs-spec.txt"), "w") as f:
+    with open(os.path.join(dest_path, "initramfs-spec.txt"), "w", encoding="utf-8") as f:
         f.writelines(map(lambda x: x + "\n", lines))
     with open(
             os.path.join(scripts_folder,
-                         "{}_initramfs-spec.txt".format(spec)), "w") as f:
+                         "{}_initramfs-spec.txt".format(spec)), "w", encoding="utf-8") as f:
         f.writelines(map(lambda x: x + "\n", lines))
 
 
@@ -3943,21 +3940,17 @@ def generate_run_sh(scripts_folder, elf_folder, spec, elf_suffix, dest_path, wit
     else:
         lines.append("echo '===== Start running SPEC2006 ====='")
 
+    
     if CPU2017:
-        spec_bin = get_cpu2017_info(os.environ.get("CPU2017_RUN_DIR"),
-                                 elf_folder,
-                                 elf_suffix)[spec][0][0].split("/")[-1]
-        spec_cmd = " ".join(
-            get_cpu2017_info(os.environ.get("CPU2017_RUN_DIR"),
-                          elf_folder, elf_suffix)[spec][1])
+        cpu20xx_run_dir = os.environ.get("CPU2017_RUN_DIR")
     else:
-        spec_bin = get_cpu2006_info(os.environ.get("CPU2006_RUN_DIR"),
-                                 elf_folder,
-                                 elf_suffix)[spec][0][0].split("/")[-1]
-        spec_cmd = " ".join(
-            get_cpu2006_info(os.environ.get("CPU2006_RUN_DIR"),
-                          elf_folder, elf_suffix)[spec][1])
-
+        cpu20xx_run_dir = os.environ.get("CPU2006_RUN_DIR")
+    spec_bin = get_cpu2017_info(cpu20xx_run_dir,
+                             elf_folder,
+                             elf_suffix)[spec][0][0].split("/")[-1]
+    spec_cmd = " ".join(
+        get_cpu2017_info(cpu20xx_run_dir,
+                      elf_folder, elf_suffix)[spec][1])
     lines.append(f"echo '======== BEGIN {spec} ========'")
     lines.append("set -x")
     lines.append(f"md5sum /spec/{spec_bin}")
@@ -3982,11 +3975,11 @@ def generate_run_sh(scripts_folder, elf_folder, spec, elf_suffix, dest_path, wit
     else:
         lines.append("echo '===== Finish running SPEC2006 ====='")
 
-    with open(os.path.join(dest_path, "run.sh"), "w") as f:
+    with open(os.path.join(dest_path, "run.sh"), "w", encoding="utf-8") as f:
         f.writelines(map(lambda x: x + "\n", lines))
     with open(
             os.path.join(scripts_folder,
-                         "{}_run.sh".format(spec)), "w") as f:
+                         "{}_run.sh".format(spec)), "w", encoding="utf-8") as f:
         f.writelines(map(lambda x: x + "\n", lines))
 
 

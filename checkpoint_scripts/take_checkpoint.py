@@ -161,7 +161,7 @@ checkpoint_configs = list(
         range(int(get_config()["checkpoint"]["id"]),
               int(get_config()["checkpoint"]["times"]))))
 
-profiling_roots = []
+profiling_roots = CheckpointTree("None")
 
 def nemu_profiling_command(config):
     command = [
@@ -259,7 +259,7 @@ def profiling_func(profiling_id, config):
     else:
         profiling_config["command"] = qemu_profiling_command(profiling_config)
 
-    profiling_roots.append(CheckpointTree(profiling_config))
+    profiling_roots = CheckpointTree(profiling_config)
 
     return profiling_config["profiling"]["config"]
 
@@ -279,7 +279,7 @@ def cluster_func(profiling_id, cluster_id, config):
     cluster_config["command"] = cluster_command(cluster_config)
 
     child = CheckpointTree(cluster_config)
-    profiling_roots[profiling_id].add_child(child)
+    profiling_roots.add_child(child)
 
     return cluster_config["cluster"]["config"]
 
@@ -308,7 +308,7 @@ def checkpoint_func(profiling_id, cluster_id, checkpoint_id, config):
             checkpoint_config)
 
     child = CheckpointTree(checkpoint_config)
-    profiling_roots[profiling_id].children[cluster_id].add_child(child)
+    profiling_roots.children[cluster_id].add_child(child)
 
     return checkpoint_config["checkpoint"]["config"]
 
