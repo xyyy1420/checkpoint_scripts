@@ -2,6 +2,8 @@
 
 set -x
 set -o errexit
+
+# shellcheck source=prepare_env.sh
 source prepare_env.sh
 
 ENV_HOME="$(pwd)"
