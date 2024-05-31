@@ -4,7 +4,8 @@ set -x
 set -o errexit
 source prepare_env.sh
 
-export ENV_HOME=$(pwd)
+ENV_HOME="$(pwd)"
+export ENV_HOME
 
 clone_repo()
 {
