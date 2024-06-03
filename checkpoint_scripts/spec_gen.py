@@ -3796,7 +3796,7 @@ def get_cpu2017_info(cpu2017_run_dir, elf_folder, elf_suffix):
             f"{cpu2017_run_dir}/x264_seek/frame_400.yuv",
             f"{cpu2017_run_dir}/x264_seek/frame_600.yuv",
             f"{cpu2017_run_dir}/x264_seek/x264_stats.log.mbtree",
-            f"{cpu2017_run_dir}/x264_seek/frame_800.yuv"
+            f"{cpu2017_run_dir}/x264_seek/frame_800.yuv",
             f"{cpu2017_run_dir}/x264/BuckBunny.yuv",
         ], [
             "--seek", "500", "--dumpyuv", "200", "--frames", "1250", "-o",

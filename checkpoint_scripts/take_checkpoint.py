@@ -69,7 +69,8 @@ default_config = {
     "command": [],
     "emu": "",
     "out-log:": "",
-    "err-log": ""
+    "err-log": "",
+    "execute_mode": ""
 }
 
 
@@ -99,8 +100,10 @@ class CheckpointTree:
 
         with open(out_file, "w") as out, open(err_file, "w") as err:
             command = self.value["command"]
-            print(command)
+            print(self.value)
+            print(self.value["utils"]["workload"], self.value["execute_mode"])
             res = subprocess.run(command, stdout=out, stderr=err)
+            print(command + "Execute finish")
             return res
 
     def __repr__(self):
@@ -124,7 +127,8 @@ def deep_first_exec(node, level=0):
 
 
 def level_first_exec(root):
-    if not root:
+    if root is None:
+        print("root is none")
         return
 
     queue = deque([root])
@@ -161,7 +165,7 @@ checkpoint_configs = list(
         range(int(get_config()["checkpoint"]["id"]),
               int(get_config()["checkpoint"]["times"]))))
 
-profiling_roots = CheckpointTree("None")
+profiling_roots = CheckpointTree(None)
 
 def nemu_profiling_command(config):
     command = [
@@ -253,12 +257,14 @@ def profiling_func(profiling_id, config):
 
     profiling_config["out-log"] = os.path.join(config["utils"]["log_folder"], "profiling-{}".format(profiling_id), config["utils"]["workload"], "profiling.out.log")
     profiling_config["err-log"] = os.path.join(config["utils"]["log_folder"], "profiling-{}".format(profiling_id), config["utils"]["workload"], "profiling.err.log")
+    profiling_config["execute_mode"] = "profiling"
 
     if profiling_config["emu"] == "NEMU":
         profiling_config["command"] = nemu_profiling_command(profiling_config)
     else:
         profiling_config["command"] = qemu_profiling_command(profiling_config)
 
+    global profiling_roots
     profiling_roots = CheckpointTree(profiling_config)
 
     return profiling_config["profiling"]["config"]
@@ -273,12 +279,15 @@ def cluster_func(profiling_id, cluster_id, config):
     cluster_config["cluster"]["config"] = "{}-{}-{}".format(
         cluster_config["cluster"]["basename"], profiling_id, cluster_id)
 
+    cluster_config["execute_mode"] = "cluster"
+
     cluster_config["out-log"] = os.path.join(config["utils"]["log_folder"], "cluster-{}-{}".format(profiling_id, cluster_id), config["utils"]["workload"],"cluster.out.log")
     cluster_config["err-log"] = os.path.join(config["utils"]["log_folder"], "cluster-{}-{}".format(profiling_id, cluster_id), config["utils"]["workload"],"cluster.err.log")
 
     cluster_config["command"] = cluster_command(cluster_config)
 
     child = CheckpointTree(cluster_config)
+    global profiling_roots
     profiling_roots.add_child(child)
 
     return cluster_config["cluster"]["config"]
@@ -297,6 +306,8 @@ def checkpoint_func(profiling_id, cluster_id, checkpoint_id, config):
         checkpoint_config["checkpoint"]["basename"], profiling_id, cluster_id,
         checkpoint_id)
 
+    checkpoint_config["execute_mode"] = "checkpoint"
+
     checkpoint_config["out-log"] = os.path.join(config["utils"]["log_folder"], "checkpoint-{}-{}-{}".format(profiling_id, cluster_id, checkpoint_id), config["utils"]["workload"], "checkpoint.out.log")
     checkpoint_config["err-log"] = os.path.join(config["utils"]["log_folder"], "checkpoint-{}-{}-{}".format(profiling_id, cluster_id, checkpoint_id), config["utils"]["workload"], "checkpoint.err.log")
 
@@ -308,6 +319,7 @@ def checkpoint_func(profiling_id, cluster_id, checkpoint_id, config):
             checkpoint_config)
 
     child = CheckpointTree(checkpoint_config)
+    global profiling_roots
     profiling_roots.children[cluster_id].add_child(child)
 
     return checkpoint_config["checkpoint"]["config"]
@@ -322,8 +334,10 @@ def generate_command(workload_folder, workload, buffer, bin_suffix, emu, log_fol
     config["utils"]["bin_suffix"] = bin_suffix
     config["emu"] = emu
     config["utils"]["log_folder"] = log_folder
+    global profiling_roots
     if not os.path.exists("{}/{}{}".format(config["utils"]["workload_folder"], config["utils"]["workload"], config["utils"]["bin_suffix"])):
         print("Workload binary not exists: {}", config["utils"]["workload"])
+        profiling_roots = None
         return profiling_roots
 
     p_func = functools.partial(profiling_func, config=config)

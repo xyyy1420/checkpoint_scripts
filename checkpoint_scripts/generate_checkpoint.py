@@ -635,8 +635,9 @@ if __name__ == "__main__":
 
     set_startid_times(args.start_id, args.times)
 
+    generate_folders()
+
     if args.archive_id is None:
-        generate_folders()
         generate_specapp_assembly(spec_base_app_list, args.elfs, args.max_threads)
 
         spec_app_execute_list = []
@@ -659,4 +660,13 @@ if __name__ == "__main__":
             e.map(level_first_exec, spec_app_execute_list)
 #        generate_result(def_config()["buffer"], os.path.join(def_config()["buffer"], "logs"))
     else:
-        print("Not support yet")
+        spec_app_execute_list = []
+        for spec_app in spec_app_list:
+            root_noods = generate_command(build_config()["bin_folder"], spec_app, def_config()["buffer"], "", args.emulator, os.path.join(def_config()["buffer"], "logs"))
+
+#            list(map(print_tree, root_noods))
+            spec_app_execute_list.append(root_noods)
+
+        with concurrent.futures.ProcessPoolExecutor(max_workers=args.max_threads) as e:
+            e.map(level_first_exec, spec_app_execute_list)
+#
