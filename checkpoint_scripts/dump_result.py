@@ -10,11 +10,19 @@ app_list = [
     "lbm", "wrf", "sphinx3"
 ]
 
+spec_2017_list = [
+    "bwaves_1", "bwaves_2", "bwaves_3", "bwaves_4", "cactuBSSN", "namd",
+    "parest", "povray", "lbm", "wrf", "blender", "cam4", "imagick", "nab",
+    "fotonik3d", "roms", "perlbench_diff", "perlbench_spam", "perlbench_split",
+    "gcc_pp_O2", "gcc_pp_O3", "gcc_ref32_O3", "gcc_ref32_O5", "gcc_small_O3",
+    "mcf", "omnetpp", "xalancbmk", "x264_pass1", "x264_pass2", "x264_seek",
+    "deepsjeng", "leela", "exchange2", "xz_cld", "xz_combined", "xz_cpu2006"
+]
+
 def profiling_instrs(profiling_log, spec_app):
     regex = r".*total guest instructions = (.*)\x1b.*"
-    with open(os.path.join(profiling_log, "{}-out.log".format(spec_app)),
+    with open(os.path.join(profiling_log, spec_app,"profiling.out.log"),
               "r") as f:
-        return 0
         for i in f.readlines():
             if "total guest instructions" in i:
                 match = re.findall(regex, i)
