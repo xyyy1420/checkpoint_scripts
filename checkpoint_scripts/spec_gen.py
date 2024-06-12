@@ -292,7 +292,7 @@ def get_cpu2017_info(cpu2017_run_dir, elf_folder, elf_suffix):
             "sh3_no_char.blend", "--render-output", "sh3_no_char_",
             "--threads", "1", "-b", "-F", "RAWTGA", "-s", "849", "-e", "849",
             "-a"
-        ], ["int", "ref"]),
+        ], ["fp", "ref"]),
         "bwaves_1": ([
             f"{elf_folder}/bwaves" + elf_suffix,
             f"{cpu2017_run_dir}/bwaves/bwaves_3.in",
@@ -308,7 +308,7 @@ def get_cpu2017_info(cpu2017_run_dir, elf_folder, elf_suffix):
             f"{cpu2017_run_dir}/bwaves/control",
             f"{cpu2017_run_dir}/bwaves/bwaves_1.in",
             f"{cpu2017_run_dir}/bwaves/bwaves_4.in"
-        ], ["bwaves_2", "<", "bwaves_2.in"], ["int", "ref"]),
+        ], ["bwaves_2", "<", "bwaves_2.in"], ["fp", "ref"]),
         "bwaves_3": ([
             f"{elf_folder}/bwaves" + elf_suffix,
             f"{cpu2017_run_dir}/bwaves/bwaves_3.in",
@@ -316,7 +316,7 @@ def get_cpu2017_info(cpu2017_run_dir, elf_folder, elf_suffix):
             f"{cpu2017_run_dir}/bwaves/control",
             f"{cpu2017_run_dir}/bwaves/bwaves_1.in",
             f"{cpu2017_run_dir}/bwaves/bwaves_4.in"
-        ], ["bwaves_3", "<", "bwaves_3.in"], ["int", "ref"]),
+        ], ["bwaves_3", "<", "bwaves_3.in"], ["fp", "ref"]),
         "bwaves_4": ([
             f"{elf_folder}/bwaves" + elf_suffix,
             f"{cpu2017_run_dir}/bwaves/bwaves_3.in",
@@ -324,12 +324,12 @@ def get_cpu2017_info(cpu2017_run_dir, elf_folder, elf_suffix):
             f"{cpu2017_run_dir}/bwaves/control",
             f"{cpu2017_run_dir}/bwaves/bwaves_1.in",
             f"{cpu2017_run_dir}/bwaves/bwaves_4.in"
-        ], ["bwaves_4", "<", "bwaves_4.in"], ["int", "ref"]),
+        ], ["bwaves_4", "<", "bwaves_4.in"], ["fp", "ref"]),
         "cactuBSSN": ([
             f"{elf_folder}/cactuBSSN" + elf_suffix,
             f"{cpu2017_run_dir}/cactuBSSN/control",
             f"{cpu2017_run_dir}/cactuBSSN/spec_ref.par"
-        ], ["spec_ref.par"], ["int", "ref"]),
+        ], ["spec_ref.par"], ["fp", "ref"]),
         "cam4": ([
             f"{elf_folder}/cam4" + elf_suffix,
             f"{cpu2017_run_dir}/cam4/bcphi_camrt_c080918.nc",
@@ -352,7 +352,7 @@ def get_cpu2017_info(cpu2017_run_dir, elf_folder, elf_suffix):
             f"{cpu2017_run_dir}/cam4/dust3_camrt_c080918.nc",
             f"{cpu2017_run_dir}/cam4/USGS-gtopo30_1.9x2.5_remap_c050602.nc",
             f"{cpu2017_run_dir}/cam4/ocphi_camrt_c080918.nc"
-        ], [], ["int", "ref"]),
+        ], [], ["fp", "ref"]),
         "deepsjeng": ([
             f"{elf_folder}/deepsjeng" + elf_suffix,
             f"{cpu2017_run_dir}/deepsjeng/ref.txt"
@@ -385,7 +385,7 @@ def get_cpu2017_info(cpu2017_run_dir, elf_folder, elf_suffix):
         ], [
             "gcc-pp.c", "-O2", "-finline-limit=36000", "-fpic", "-o",
             "gcc-pp.opts-O2_-finline-limit_36000_-fpic.s"
-        ], ["fp", "ref"]),
+        ], ["int", "ref"]),
         "gcc_pp_O3": ([
             f"{elf_folder}/gcc" + elf_suffix,
             f"{cpu2017_run_dir}/gcc/ref32.c",
@@ -397,7 +397,7 @@ def get_cpu2017_info(cpu2017_run_dir, elf_folder, elf_suffix):
             "gcc-pp.c", "-O3", "-finline-limit=0", "-fif-conversion",
             "-fif-conversion2", "-o",
             "gcc-pp.opts-O3_-finline-limit_0_-fif-conversion_-fif-conversion2.s"
-        ], ["fp", "ref"]),
+        ], ["int", "ref"]),
         "gcc_ref32_O3": ([
             f"{elf_folder}/gcc" + elf_suffix,
             f"{cpu2017_run_dir}/gcc/ref32.c",
@@ -409,7 +409,7 @@ def get_cpu2017_info(cpu2017_run_dir, elf_folder, elf_suffix):
             "ref32.c", "-O3", "-fselective-scheduling",
             "-fselective-scheduling2", "-o",
             "ref32.opts-O3_-fselective-scheduling_-fselective-scheduling2.s"
-        ], ["fp", "ref"]),
+        ], ["int", "ref"]),
         "gcc_ref32_O5": ([
             f"{elf_folder}/gcc" + elf_suffix,
             f"{cpu2017_run_dir}/gcc/ref32.c",
@@ -417,7 +417,7 @@ def get_cpu2017_info(cpu2017_run_dir, elf_folder, elf_suffix):
             f"{cpu2017_run_dir}/gcc/gcc-pp.c",
             f"{cpu2017_run_dir}/gcc/gcc-pp.opts-O3_-finline-limit_0_-fif-conversion_-fif-conversion2.s",
             f"{cpu2017_run_dir}/gcc/gcc-smaller.c"
-        ], ["ref32.c", "-O5", "-o", "ref32.opts-O5.s"], ["fp", "ref"]),
+        ], ["ref32.c", "-O5", "-o", "ref32.opts-O5.s"], ["int", "ref"]),
         "gcc_small_O3": ([
             f"{elf_folder}/gcc" + elf_suffix,
             f"{cpu2017_run_dir}/gcc/ref32.c",
@@ -428,7 +428,7 @@ def get_cpu2017_info(cpu2017_run_dir, elf_folder, elf_suffix):
         ], [
             "gcc-smaller.c", "-O3", "-fipa-pta", "-o",
             "gcc-smaller.opts-O3_-fipa-pta.s"
-        ], ["fp", "ref"]),
+        ], ["int", "ref"]),
         "imagick": ([
             f"{elf_folder}/imagick" + elf_suffix,
             f"{cpu2017_run_dir}/imagick/control",
@@ -437,7 +437,7 @@ def get_cpu2017_info(cpu2017_run_dir, elf_folder, elf_suffix):
             "-limit", "disk", "0", "refrate_input.tga", "-edge", "41",
             "-resample", "181%", "-emboss", "31", "-colorspace", "YUV",
             "-mean-shift", "19x19+15%", "-resize", "30%", "refrate_output.tga"
-        ], ["int", "ref"]),
+        ], ["fp", "ref"]),
         "lbm": ([
             f"{elf_folder}/lbm" + elf_suffix, 
             f"{cpu2017_run_dir}/lbm/100_100_130_ldc.of",
@@ -459,7 +459,7 @@ def get_cpu2017_info(cpu2017_run_dir, elf_folder, elf_suffix):
             f"dir 1am0 {cpu2017_run_dir}/nab/1am0",
             f"{cpu2017_run_dir}/nab/1am0/1am0.pdb",
             f"{cpu2017_run_dir}/nab/1am0/1am0.prm"
-        ], ["1am0", "1122214447", "122"], ["int", "ref"]),
+        ], ["1am0", "1122214447", "122"], ["fp", "ref"]),
         "namd": ([
             f"{elf_folder}/namd" + elf_suffix,
             f"{cpu2017_run_dir}/namd/apoa1.ref.output",
@@ -492,7 +492,7 @@ def get_cpu2017_info(cpu2017_run_dir, elf_folder, elf_suffix):
             f"{elf_folder}/parest" + elf_suffix,
             f"{cpu2017_run_dir}/parest/ref.prm",
             f"{cpu2017_run_dir}/parest/.ref.prm.swp"
-        ], ["ref.prm"], ["int", "ref"]),
+        ], ["ref.prm"], ["fp", "ref"]),
         "perlbench_diff": ([
             f"{elf_folder}/perlbench" + elf_suffix,
             f"{cpu2017_run_dir}/perlbench/splitmail.in",
@@ -3726,7 +3726,7 @@ def get_cpu2017_info(cpu2017_run_dir, elf_folder, elf_suffix):
             f"{elf_folder}/roms" + elf_suffix,
             f"{cpu2017_run_dir}/roms/ocean_benchmark2.in.x",
             f"{cpu2017_run_dir}/roms/varinfo.dat"
-        ], ["<", "ocean_benchmark2.in.x"], ["int", "ref"]),
+        ], ["<", "ocean_benchmark2.in.x"], ["fp", "ref"]),
         "wrf": ([
             f"{elf_folder}/wrf" + elf_suffix,
             f"{cpu2017_run_dir}/wrf/ozone_plev.formatted",
@@ -3757,7 +3757,7 @@ def get_cpu2017_info(cpu2017_run_dir, elf_folder, elf_suffix):
             f"{cpu2017_run_dir}/wrf/SOILPARM.TBL",
             f"{cpu2017_run_dir}/wrf/GENPARM.TBL",
             f"{cpu2017_run_dir}/wrf/URBPARM.TBL"
-        ], [], ["int", "ref"]),
+        ], [], ["fp", "ref"]),
         "x264_pass1": ([
             f"{elf_folder}/x264" + elf_suffix,
             f"{cpu2017_run_dir}/x264/control",
@@ -3786,7 +3786,7 @@ def get_cpu2017_info(cpu2017_run_dir, elf_folder, elf_suffix):
             "--pass", "2", "--stats", "x264_stats.log", "--bitrate", "1000",
             "--dumpyuv", "200", "--frames", "1000", "-o", "BuckBunny_New.264",
             "BuckBunny.yuv", "1280x720"
-        ], ["fp", "ref"]),
+        ], ["int", "ref"]),
         "x264_seek": ([
             f"{elf_folder}/x264" + elf_suffix,
             f"{cpu2017_run_dir}/x264_seek/frame_200.yuv",
@@ -3856,6 +3856,7 @@ def get_default_initramfs_file():
         "dir /usr/sbin 755 0 0", "dir /var 755 0 0", "dir /var/tmp 755 0 0",
         "dir /root 755 0 0", "dir /var/log 755 0 0", "",
         "nod /dev/console 644 0 0 c 5 1", "nod /dev/null 644 0 0 c 1 3", "",
+        "nod /dev/urandom 644 0 0 c 1 9", "nod /dev/random 644 0 0 c 1 8",
         "# libraries",
         "file /lib/ld-linux-riscv64-lp64d.so.1 ${RISCV}/sysroot/lib/ld-linux-riscv64-lp64d.so.1 755 0 0",
         "file /lib/libc.so.6 ${RISCV}/sysroot/lib/libc.so.6 755 0 0",
@@ -3866,15 +3867,15 @@ def get_default_initramfs_file():
         "", "# busybox",
         "file /bin/busybox ${RISCV_ROOTFS_HOME}/rootfsimg/build/busybox 755 0 0",
         "file /etc/inittab ${RISCV_ROOTFS_HOME}/rootfsimg/inittab-spec 755 0 0",
-        "slink /init /bin/busybox 755 0 0", "", "# SPEC common",
+        "slink /init /bin/busybox 755 0 0",
+        "slink /sbin/mdev /bin/busybox 755 0 0",
+        "", "# SPEC common",
         "dir /spec_common 755 0 0",
         "file /spec_common/before_workload ${RISCV_ROOTFS_HOME}/rootfsimg/build/before_workload 755 0 0",
         "file /spec_common/trap ${RISCV_ROOTFS_HOME}/rootfsimg/build/trap 755 0 0",
         "", "# SPEC", "dir /spec 755 0 0",
         "file /spec/run.sh ${RISCV_ROOTFS_HOME}/rootfsimg/run.sh 755 0 0"
     ]
-    
-    
 
 
 # original func is: https://github.com/OpenXiangShan/riscv-rootfs/blob/da983ec95858dfd6f30e9feadd534b79db37e618/rootfsimg/spec_gen.py#L544
@@ -3895,10 +3896,7 @@ def traverse_path(path, stack=""):
 
 
 # original func is: https://github.com/OpenXiangShan/riscv-rootfs/blob/c61a659b454e5b038b5374a9091b29ad4995f13f/rootfsimg/spec_gen.py#L558
-def generate_initramfs(scripts_folder, elf_folder, spec, elf_suffix, dest_path, cpu2017=True):
-    print("elf folder {}".format(elf_folder))
-    print("spec {}".format(spec))
-    print("dest_path {}".format(dest_path))
+def generate_initramfs(scripts_folder, elf_folder, spec, elf_suffix, dest_path, copy=1, cpu2017=True):
     lines = get_default_initramfs_file().copy()
     spec_files = get_cpu2017_info(os.environ.get("CPU2017_RUN_DIR"),
                                elf_folder,
@@ -3922,6 +3920,10 @@ def generate_initramfs(scripts_folder, elf_folder, spec, elf_suffix, dest_path, 
                 lines.append(f"file /spec/{name}/{file} {path}/{file} 755 0 0")
         else:
             print(f"unknown filename: {filename}")
+
+    for i in range(0, int(copy)):
+        lines.append(f"file /spec/task{i}.sh "+ "${RISCV_ROOTFS_HOME}/rootfsimg/" + f"task{i}.sh 755 0 0")
+
     with open(os.path.join(dest_path, "initramfs-spec.txt"), "w", encoding="utf-8") as f:
         f.writelines(map(lambda x: x + "\n", lines))
     with open(
@@ -3930,50 +3932,60 @@ def generate_initramfs(scripts_folder, elf_folder, spec, elf_suffix, dest_path, 
         f.writelines(map(lambda x: x + "\n", lines))
 
 
-
 # original func is: https://github.com/OpenXiangShan/riscv-rootfs/blob/c61a659b454e5b038b5374a9091b29ad4995f13f/rootfsimg/spec_gen.py#L585
-def generate_run_sh(scripts_folder, elf_folder, spec, elf_suffix, dest_path, withTrap=False, CPU2017=False):
+def generate_run_sh(scripts_folder, elf_folder, spec, elf_suffix, dest_path, copy=1, withTrap=False, CPU2017=False):
     lines = []
     lines.append("#!/bin/sh")
-    if CPU2017:
-        lines.append("echo '===== Start running SPEC2017 ====='")
-    else:
-        lines.append("echo '===== Start running SPEC2006 ====='")
 
+    if CPU2017:
+        SPEC_20XX = "SPEC2017"
+    else:
+        SPEC_20XX = "SPEC2006"
+
+    lines.append(f"echo '===== Start running {SPEC_20XX} ====='")
     
     if CPU2017:
         cpu20xx_run_dir = os.environ.get("CPU2017_RUN_DIR")
     else:
         cpu20xx_run_dir = os.environ.get("CPU2006_RUN_DIR")
+
     spec_bin = get_cpu2017_info(cpu20xx_run_dir,
                              elf_folder,
                              elf_suffix)[spec][0][0].split("/")[-1]
     spec_cmd = " ".join(
         get_cpu2017_info(cpu20xx_run_dir,
                       elf_folder, elf_suffix)[spec][1])
+    
     lines.append(f"echo '======== BEGIN {spec} ========'")
     lines.append("set -x")
+    lines.append("cat /dev/urandom | head -c 16 | busybox hexdump")
     lines.append(f"md5sum /spec/{spec_bin}")
-    lines.append("date -R")
+
     if withTrap:
         lines.append("/spec_common/before_workload")
 
-    if spec == "xalancbmk":
-        lines.append(f"cd /spec && ./{spec_bin} {spec_cmd} > xalan.out")
-    else:
-        lines.append(f"cd /spec && ./{spec_bin} {spec_cmd}")
+    output_redirect = (" ").join([">", "out.log", "2>", "err.log"])
+    taskN = []
+    for i in range(0, int(copy)):
+        taskN.append("#!/bin/sh")
+        taskN.append(f"echo '===== Start running TASK{i} ====='")
+        taskN.append("date -R")
+        taskN.append("/spec_common/before_workload")
+        taskN.append(f"cd /spec && ./{spec_bin} {spec_cmd} {output_redirect}")
+        taskN.append("date -R")
+        taskN.append("/spec_common/trap")
+        lines.append(f"/bin/busybox taskset -c {i} /spec/task{i}.sh")
+        with open(os.path.join(dest_path, f"task{i}.sh"), "w", encoding="utf-8") as f:
+            f.writelines(map(lambda x: x + "\n", taskN))
+        taskN = []
+
     lines.append("ls /spec")
 
     if withTrap:
         lines.append("/spec_common/trap")
-    lines.append("date -R")
-    lines.append("set +x")
-    lines.append(f"echo '======== END   {spec} ========'")
 
-    if CPU2017:
-        lines.append("echo '===== Finish running SPEC2017 ====='")
-    else:
-        lines.append("echo '===== Finish running SPEC2006 ====='")
+    lines.append(f"echo '======== END   {spec} ========'")
+    lines.append(f"echo '===== Finish running {SPEC_20XX} ====='")
 
     with open(os.path.join(dest_path, "run.sh"), "w", encoding="utf-8") as f:
         f.writelines(map(lambda x: x + "\n", lines))
@@ -3983,12 +3995,11 @@ def generate_run_sh(scripts_folder, elf_folder, spec, elf_suffix, dest_path, wit
         f.writelines(map(lambda x: x + "\n", lines))
 
 
-def prepare_rootfs(scripts_folder, elf_folder, spec, withTrap=True, CPU2017=False):
-    print("prepare rootfs")
-    generate_initramfs(scripts_folder, elf_folder, spec,
-                       "",
-                       os.path.join(os.environ.get("RISCV_ROOTFS_HOME"), "rootfsimg"), CPU2017)
-    generate_run_sh(scripts_folder, elf_folder, spec,
-                    "",
-                    os.path.join(os.environ.get("RISCV_ROOTFS_HOME"), "rootfsimg"),
-                    withTrap, CPU2017)
+def prepare_rootfs(scripts_folder, elf_folder, spec, copy, withTrap=False, CPU2017=False):
+    generate_initramfs(scripts_folder=scripts_folder, elf_folder=elf_folder, spec=spec,
+                       elf_suffix="",
+                       dest_path=os.path.join(os.environ.get("RISCV_ROOTFS_HOME"), "rootfsimg"), copy=copy, cpu2017=CPU2017)
+    generate_run_sh(scripts_folder=scripts_folder, elf_folder=elf_folder, spec=spec,
+                    elf_suffix="", copy=copy,
+                    dest_path=os.path.join(os.environ.get("RISCV_ROOTFS_HOME"), "rootfsimg"),
+                    withTrap=withTrap, CPU2017=CPU2017)
