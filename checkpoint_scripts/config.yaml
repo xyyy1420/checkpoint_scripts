@@ -1,0 +1,24 @@
+base_config:
+  message: "NULL"
+  spec_app_list: null
+  spec_apps: null
+  elf_folder: null
+  times: "1,1,1"
+  start_id: "0,0,0"
+  emulator: "NEMU"
+  build_bbl_only: false
+  max_threads: 70
+  CPU2017: true
+  generate_rootfs_script_only: false
+  copies: 1
+  archive_id: null
+  redirect_output: false
+  cpu_bind: 0
+  mem_bind: 0
+archive_id_config:
+  gcc_version: "gcc12.2.0"
+  riscv_ext: "rv64gcb"
+  base_or_fixed: "base"
+  special_flag: "intFppOff_exchange"
+  emulator: "NEMU"
+  group: "archgroup"

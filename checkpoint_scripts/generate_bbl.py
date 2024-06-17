@@ -87,13 +87,15 @@ class Builder:
     def copy_files(base_path, spec, suffix, assembly_folder, bin_folder, files):
         """Copy files from base path to their respective destinations with appropriate suffixes."""
         for src, dest_suffix in files.items():
-            src_path = os.path.join(base_path, src)
-            bin_dest_path = os.path.join(bin_folder, f"{spec}{suffix}")
-            shutil.copy(src_path, bin_dest_path)
-
             if dest_suffix:
                 assembly_dest_path = os.path.join(assembly_folder, f"{spec}{suffix}{dest_suffix}")
                 shutil.copy(src_path, assembly_dest_path)
+                continue
+
+            src_path = os.path.join(base_path, src)
+            bin_dest_path = os.path.join(bin_folder, f"{spec}{suffix}")
+            print(src_path, bin_dest_path)
+            shutil.copy(src_path, bin_dest_path)
 
 # Example usage
 #builder = Builder(env_vars_to_check=["LINUX_HOME", "OPENSBI_HOME", "XIANGSHAN_FDT", "NEMU_HOME", "RISCV_PK_HOME"])

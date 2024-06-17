@@ -1,11 +1,12 @@
 import os
-import yaml
 import pathlib
 from datetime import datetime
 import argparse
 import shutil
 import subprocess
 import concurrent.futures
+import signal
+import yaml
 from spec_gen import prepare_rootfs
 from spec_gen import get_cpu2017_info
 from spec_gen import get_cpu2006_info
@@ -24,10 +25,12 @@ default_config = {
 
 
 def def_config():
+    """get default config"""
     return default_config
 
 
 def prepare_config():
+    """get prepare config"""
     return {
         "prepare_log":
         os.path.join(def_config()["buffer"],
@@ -38,6 +41,7 @@ def prepare_config():
 
 
 def build_config():
+    """get build binary config"""
     return {
         "build_log":
         os.path.join(def_config()["buffer"],
@@ -54,11 +58,13 @@ def build_config():
 
 
 def mkdir(path):
+    """create directory wrapper"""
     if not pathlib.Path(path).exists():
         os.makedirs(path)
 
 
 def create_folders():
+    """create prepare and build folder"""
     for value in build_config().values():
         mkdir(value)
     for value in prepare_config().values():
