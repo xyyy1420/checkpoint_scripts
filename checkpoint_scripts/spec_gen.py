@@ -3933,22 +3933,19 @@ def generate_initramfs(scripts_folder, elf_folder, spec, elf_suffix, dest_path, 
 
 
 # original func is: https://github.com/OpenXiangShan/riscv-rootfs/blob/c61a659b454e5b038b5374a9091b29ad4995f13f/rootfsimg/spec_gen.py#L585
-def generate_run_sh(scripts_folder, elf_folder, spec, elf_suffix, dest_path, copy=1, withTrap=False, CPU2017=False):
+def generate_run_sh(scripts_folder, elf_folder, spec, elf_suffix, dest_path, copy=1, withTrap=False, CPU2017=False, redirect_output=False):
     lines = []
     lines.append("#!/bin/sh")
 
     if CPU2017:
         SPEC_20XX = "SPEC2017"
+        cpu20xx_run_dir = os.environ.get("CPU2017_RUN_DIR")
     else:
         SPEC_20XX = "SPEC2006"
+        cpu20xx_run_dir = os.environ.get("CPU2006_RUN_DIR")
 
     lines.append(f"echo '===== Start running {SPEC_20XX} ====='")
     
-    if CPU2017:
-        cpu20xx_run_dir = os.environ.get("CPU2017_RUN_DIR")
-    else:
-        cpu20xx_run_dir = os.environ.get("CPU2006_RUN_DIR")
-
     spec_bin = get_cpu2017_info(cpu20xx_run_dir,
                              elf_folder,
                              elf_suffix)[spec][0][0].split("/")[-1]
@@ -3961,21 +3958,23 @@ def generate_run_sh(scripts_folder, elf_folder, spec, elf_suffix, dest_path, cop
     lines.append("cat /dev/urandom | head -c 16 | busybox hexdump")
     lines.append(f"md5sum /spec/{spec_bin}")
 
-    if withTrap:
-        lines.append("/spec_common/before_workload")
-
-    output_redirect = (" ").join([">", "out.log", "2>", "err.log"])
+    output_redirect = (" ").join([">", "out.log", "2>", "err.log"]) if redirect_output else ""
     taskN = []
     for i in range(0, int(copy)):
         taskN.append("#!/bin/sh")
+        taskN.append("set -x")
         taskN.append(f"echo '===== Start running TASK{i} ====='")
         taskN.append("date -R")
-        taskN.append("/spec_common/before_workload")
+        if withTrap:
+            taskN.append("/spec_common/before_workload")
         taskN.append(f"cd /spec && ./{spec_bin} {spec_cmd} {output_redirect}")
         taskN.append("date -R")
-        taskN.append("/spec_common/trap")
+        if withTrap:
+            taskN.append("/spec_common/trap")
         lines.append(f"/bin/busybox taskset -c {i} /spec/task{i}.sh")
         with open(os.path.join(dest_path, f"task{i}.sh"), "w", encoding="utf-8") as f:
+            f.writelines(map(lambda x: x + "\n", taskN))
+        with open(os.path.join(scripts_folder, f"{spec}_task{i}.sh"), "w", encoding="utf-8") as f:
             f.writelines(map(lambda x: x + "\n", taskN))
         taskN = []
 
@@ -3995,11 +3994,11 @@ def generate_run_sh(scripts_folder, elf_folder, spec, elf_suffix, dest_path, cop
         f.writelines(map(lambda x: x + "\n", lines))
 
 
-def prepare_rootfs(scripts_folder, elf_folder, spec, copy, withTrap=False, CPU2017=False):
+def prepare_rootfs(scripts_folder, elf_folder, spec, copy, withTrap=False, CPU2017=False, redirect_output=False):
     generate_initramfs(scripts_folder=scripts_folder, elf_folder=elf_folder, spec=spec,
                        elf_suffix="",
                        dest_path=os.path.join(os.environ.get("RISCV_ROOTFS_HOME"), "rootfsimg"), copy=copy, cpu2017=CPU2017)
     generate_run_sh(scripts_folder=scripts_folder, elf_folder=elf_folder, spec=spec,
                     elf_suffix="", copy=copy,
                     dest_path=os.path.join(os.environ.get("RISCV_ROOTFS_HOME"), "rootfsimg"),
-                    withTrap=withTrap, CPU2017=CPU2017)
+                    withTrap=withTrap, CPU2017=CPU2017, redirect_output=redirect_output)
