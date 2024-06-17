@@ -72,33 +72,25 @@ def create_folders():
 
 
 def generate_archive_info(message):
+    """set archive info"""
     with open(os.path.join(def_config()["archive_folder"], "archive_info"),
               "a", encoding="utf-8") as f:
         f.write("{}: {}\n".format(def_config()["archive_id"], message))
 
 
-folder_name_config = {
-    "gcc_version": "gcc14.0.0",
-    "riscv_ext": "rv64gcv",
-    "base_or_fixed": "base",
-    "special_flag": "nospecial",
-    "emulator": "NEMU",
-    "group": "archgroup",
-    "time": ""
-}
-
-
-def generate_buffer_folder_name():
-    folder_name_config["time"] = datetime.now().strftime("%Y-%m-%d-%H-%M")
-    folder_name = "{}_{}_{}_{}_{}_{}_{}".format(
-        folder_name_config["gcc_version"], folder_name_config["riscv_ext"],
-        folder_name_config["base_or_fixed"],
-        folder_name_config["special_flag"], folder_name_config["emulator"],
-        folder_name_config["group"], folder_name_config["time"])
+def generate_buffer_folder_name(base_config, archive_id_config):
+    """using compile and env info generate archive id"""
+    time = datetime.now().strftime("%Y-%m-%d-%H-%M")
+    if base_config["CPU2017"]:
+        spec_20xx = "spec17"
+    else:
+        spec_20xx = "spec06"
+    folder_name = f'{spec_20xx}_{archive_id_config["gcc_version"]}_{archive_id_config["riscv_ext"]}_{archive_id_config["base_or_fixed"]}_{archive_id_config["special_flag"]}_{archive_id_config["emulator"]}_{archive_id_config["group"]}_{time}'
     return folder_name
 
 
 def entrys(path):
+    """seems useless"""
     entrys_list = []
     with os.scandir(path) as el:
         for entry in el:
@@ -106,25 +98,27 @@ def entrys(path):
     return entrys_list
 
 
-def generate_folders(config):
+def generate_folders(base_config, archive_id_config):
+    """create archive when archive id is none"""
     # set archive id from arg
-    if config["archive_id"] is None:
-        default_config["archive_id"] = generate_buffer_folder_name()
+    if base_config["archive_id"] is None:
+        default_config["archive_id"] = generate_buffer_folder_name(base_config, archive_id_config)
     else:
-        default_config["archive_id"] = config["archive_id"]
+        default_config["archive_id"] = base_config["archive_id"]
 
     default_config["buffer"] = os.path.join(def_config()["archive_folder"],
                                             def_config()["archive_id"])
-    if config["archive_id"] is None:
+    if base_config["archive_id"] is None:
         create_folders()
 
     assert (os.path.exists(def_config()["buffer"]))
 
-    if config["message"] is not None:
-        generate_archive_info(config["message"])
+    if base_config["message"] is not None:
+        generate_archive_info(base_config["message"])
 
 
 def dump_assembly(file_path, assembly_file):
+    """generate assembly file"""
     if file_path is not None:
         with open(assembly_file, "w", encoding="utf-8") as out:
             res = subprocess.run(
@@ -172,9 +166,15 @@ def generate_specapp_assembly(spec_base_app_list, elfs, max_threads):
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_threads) as e:
         list(map(lambda spec: e.submit(copy_and_get_assembly, spec, elfs), spec_base_app_list))
 
+def handle_keyboard_interrupt(signum, frame):
+    print("Caught KeyboardInterrupt, shutting down...")
+    raise KeyboardInterrupt
+
 def main(config):
-    spec_app_list = app_list(config["spec_app_list"], config["spec_apps"], config["CPU2017"])
-    if config["CPU2017"]:
+    base_config = config["base_config"]
+    archive_id_config = config["archive_id_config"]
+    spec_app_list = app_list(base_config["spec_app_list"], base_config["spec_apps"], base_config["CPU2017"])
+    if base_config["CPU2017"]:
         spec_base_app_list = list(set(
             map(lambda item: os.path.split(get_cpu2017_info(os.environ.get("CPU2017_RUN_DIR"), "", "")[item][0][0])[1], spec_app_list)))
     else:
@@ -183,47 +183,62 @@ def main(config):
 
     print(spec_base_app_list)
 
-    set_startid_times(config["start_id"], config["times"])
+    set_startid_times(base_config["start_id"], base_config["times"])
 
-    generate_folders(config)
+    generate_folders(base_config, archive_id_config)
 
-    if config["archive_id"] is None:
-        generate_specapp_assembly(spec_base_app_list, config["elf_folder"], config["max_threads"])
+    if base_config["archive_id"] is None:
+        generate_specapp_assembly(spec_base_app_list, base_config["elf_folder"], base_config["max_threads"])
 
         spec_app_execute_list = []
         for spec_app in spec_app_list:
-            prepare_rootfs(scripts_folder=build_config()["scripts_folder"], elf_folder=prepare_config()["elf_folder"], spec=spec_app, withTrap=True, copy=config["copies"], CPU2017=config["CPU2017"])
+            prepare_rootfs(scripts_folder=build_config()["scripts_folder"], elf_folder=prepare_config()["elf_folder"], spec=spec_app, withTrap=True, copy=base_config["copies"], CPU2017=base_config["CPU2017"], redirect_output=base_config["redirect_output"])
 
-            if config["generate_rootfs_script_only"]:
+            if base_config["generate_rootfs_script_only"]:
                 continue
 
             builder = Builder(env_vars_to_check=["RISCV_PK_HOME"])
-            if config["emulator"] == "QEMU":
+            if base_config["emulator"] == "QEMU":
                 builder.build_opensbi_payload(spec_app, build_config()["build_log"], build_config()["bin_folder"], "", build_config()["gcpt_bin_folder"], "", build_config()["assembly_folder"])
             else:
                 builder.build_spec_bbl(spec_app, build_config()["build_log"], build_config()["bin_folder"], "", build_config()["assembly_folder"])
 
-            if config["build_bbl_only"]:
+            if base_config["build_bbl_only"]:
                 continue
 
-            root_noods = generate_command(build_config()["bin_folder"], spec_app, def_config()["buffer"], "", config["emulator"], os.path.join(def_config()["buffer"], "logs"))
+            root_noods = generate_command(workload_folder=build_config()["bin_folder"], workload=spec_app, buffer=def_config()["buffer"], bin_suffix="", emu=base_config["emulator"], log_folder=os.path.join(def_config()["buffer"], "logs"), cpu_bind=base_config["cpu_bind"], mem_bind=base_config["mem_bind"])
 
             spec_app_execute_list.append(root_noods)
 
         if spec_app_execute_list is not []:
-            with concurrent.futures.ProcessPoolExecutor(max_workers=config["max_threads"]) as e:
-                e.map(level_first_exec, spec_app_execute_list)
-#        generate_result(def_config()["buffer"], os.path.join(def_config()["buffer"], "logs"))
+            with concurrent.futures.ProcessPoolExecutor(max_workers=base_config["max_threads"]) as e:
+                futures = []
+                try:
+                    futures = {e.submit(level_first_exec, task): task for task in spec_app_execute_list}
+#                    e.map(level_first_exec, spec_app_execute_list)
+                except KeyboardInterrupt:
+                    for future in futures:
+                        future.cancel()
+                    e.shutdown(wait=False)
+            #        generate_result(def_config()["buffer"], os.path.join(def_config()["buffer"], "logs"))
     else:
         spec_app_execute_list = []
         for spec_app in spec_app_list:
-            root_noods = generate_command(build_config()["bin_folder"], spec_app, def_config()["buffer"], "", config["emulator"], os.path.join(def_config()["buffer"], "logs"))
+            root_noods = generate_command(workload_folder=build_config()["bin_folder"], workload=spec_app, buffer=def_config()["buffer"], bin_suffix="", emu=base_config["emulator"], log_folder=os.path.join(def_config()["buffer"], "logs"), cpu_bind=base_config["cpu_bind"], mem_bind=base_config["mem_bind"])
 
-#            list(map(print_tree, root_noods))
+            #            list(map(print_tree, root_noods))
             spec_app_execute_list.append(root_noods)
 
-        with concurrent.futures.ProcessPoolExecutor(max_workers=config["max_threads"]) as e:
-            e.map(level_first_exec, spec_app_execute_list)
+        with concurrent.futures.ProcessPoolExecutor(max_workers=base_config["max_threads"]) as e:
+            futures = []
+            try:
+                futures = {e.submit(level_first_exec, task): task for task in spec_app_execute_list}
+#                e.map(level_first_exec, spec_app_execute_list)
+            except KeyboardInterrupt:
+                for future in futures:
+                    future.cancel()
+                e.shutdown(wait=False)
+                
 #
 
 
@@ -232,10 +247,10 @@ def load_config(config_file):
         return yaml.safe_load(file)
 
 if __name__ == "__main__":
+    signal.signal(signal.SIGINT, handle_keyboard_interrupt)
     parser = argparse.ArgumentParser(description="Auto profiling and checkpointing")
     parser.add_argument('--config', default='config.yaml', help="Path to the configuration file (default: config.yaml)")
     args = parser.parse_args()
 
     config = load_config(args.config)
     main(config)
-
