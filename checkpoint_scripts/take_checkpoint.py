@@ -70,7 +70,9 @@ default_config = {
     "emu": "",
     "out-log:": "",
     "err-log": "",
-    "execute_mode": ""
+    "execute_mode": "",
+    "cpu_bind": "",
+    "mem_bind": ""
 }
 
 
@@ -142,7 +144,14 @@ def level_first_exec(root):
             for child in node.children:
                 queue.append(child)
         with concurrent.futures.ProcessPoolExecutor() as e:
-            list(map(lambda x: e.submit(x.execute), execute_list))
+            futures = []
+            try:
+                futures = {e.submit(task.execute):task for task in execute_list}
+#                list(map(lambda x: e.submit(x.execute), execute_list))
+            except KeyboardInterrupt:
+                for future in futures:
+                    future.cancel()
+                e.shutdown(wait=False)
         print("---- Level Execute finish ----")
 
 
@@ -169,6 +178,7 @@ profiling_roots = CheckpointTree(None)
 
 def nemu_profiling_command(config):
     command = [
+        "numactl","--cpunodebind={}".format(config["cpu_bind"]),"--membind={}".format(config["mem_bind"]),
         config["NEMU"]["NEMU"],
         "{}/{}{}".format(config["utils"]["workload_folder"], config["utils"]["workload"], config["utils"]["bin_suffix"]),
         "-D", config["utils"]["buffer"],
@@ -184,6 +194,7 @@ def nemu_profiling_command(config):
 
 def qemu_profiling_command(config):
     command = [
+        "numactl","--cpunodebind={}".format(config["cpu_bind"]),"--membind={}".format(config["mem_bind"]),
         config["QEMU"]["QEMU"],
         "-bios", "{}/{}{}".format(config["utils"]["workload_folder"], config["utils"]["workload"], config["utils"]["bin_suffix"]),
         "-M", "nemu",
@@ -204,6 +215,7 @@ def cluster_command(config):
     seedproj = random.randint(100000, 999999)
     mkdir(os.path.split(os.path.join(config["utils"]["buffer"], config["cluster"]["config"], config["utils"]["workload"], "simpoints0"))[0])
     command = [
+        "numactl","--cpunodebind={}".format(config["cpu_bind"]),"--membind={}".format(config["mem_bind"]),
         config["NEMU"]["simpoint"],
         "-loadFVFile", os.path.join(config["utils"]["buffer"], config["profiling"]["config"], config["utils"]["workload"], "simpoint_bbv.gz"),
         "-saveSimpoints", os.path.join(config["utils"]["buffer"], config["cluster"]["config"], config["utils"]["workload"], "simpoints0"),
@@ -218,6 +230,7 @@ def cluster_command(config):
 
 def nemu_checkpoint_command(config):
     command = [
+        "numactl","--cpunodebind={}".format(config["cpu_bind"]),"--membind={}".format(config["mem_bind"]),
         config["NEMU"]["NEMU"],
         "{}/{}{}".format(config["utils"]["workload_folder"], config["utils"]["workload"], config["utils"]["bin_suffix"]),
         "-D", config["utils"]["buffer"],
@@ -233,6 +246,7 @@ def nemu_checkpoint_command(config):
 
 def qemu_checkpoint_command(config):
     command = [
+        "numactl","--cpunodebind={}".format(config["cpu_bind"]),"--membind={}".format(config["mem_bind"]),
         config["QEMU"]["QEMU"],
         "-bios", "{}/{}{}".format(config["utils"]["workload_folder"], config["utils"]["workload"], config["utils"]["bin_suffix"]),
         "-M", "nemu",
@@ -325,8 +339,18 @@ def checkpoint_func(profiling_id, cluster_id, checkpoint_id, config):
     return checkpoint_config["checkpoint"]["config"]
 
 
-def generate_command(workload_folder, workload, buffer, bin_suffix, emu, log_folder,
-                 profiling_func = profiling_func, cluster_func = cluster_func, checkpoint_func = checkpoint_func, config=default_config):
+def generate_command(workload_folder,
+                     workload,
+                     buffer,
+                     bin_suffix,
+                     emu,
+                     log_folder,
+                     cpu_bind,
+                     mem_bind,
+                     profiling_func=profiling_func,
+                     cluster_func=cluster_func,
+                     checkpoint_func=checkpoint_func,
+                     config=default_config):
 
     config["utils"]["workload_folder"] = workload_folder
     config["utils"]["workload"] = workload
@@ -334,8 +358,13 @@ def generate_command(workload_folder, workload, buffer, bin_suffix, emu, log_fol
     config["utils"]["bin_suffix"] = bin_suffix
     config["emu"] = emu
     config["utils"]["log_folder"] = log_folder
+    config["cpu_bind"] = cpu_bind
+    config["mem_bind"] = mem_bind
+
     global profiling_roots
-    if not os.path.exists("{}/{}{}".format(config["utils"]["workload_folder"], config["utils"]["workload"], config["utils"]["bin_suffix"])):
+    if not os.path.exists("{}/{}{}".format(config["utils"]["workload_folder"],
+                                           config["utils"]["workload"],
+                                           config["utils"]["bin_suffix"])):
         print("Workload binary not exists: {}", config["utils"]["workload"])
         profiling_roots = None
         return profiling_roots
@@ -365,4 +394,3 @@ def set_startid_times(start_id, times):
 #generate_command("gcc_test", "astar_biglakes", "archive", "", "NEMU", "log_folder")
 #print_tree(profiling_roots[0])
 #level_first_exec(profiling_roots[0])
-
