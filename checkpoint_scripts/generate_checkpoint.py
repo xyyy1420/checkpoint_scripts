@@ -173,7 +173,11 @@ def handle_keyboard_interrupt(signum, frame):
 def main(config):
     base_config = config["base_config"]
     archive_id_config = config["archive_id_config"]
+
+    # list file has a higher priority
     spec_app_list = app_list(base_config["spec_app_list"], base_config["spec_apps"], base_config["CPU2017"])
+
+    # benchmark base
     if base_config["CPU2017"]:
         spec_base_app_list = list(set(
             map(lambda item: os.path.split(get_cpu2017_info(os.environ.get("CPU2017_RUN_DIR"), "", "")[item][0][0])[1], spec_app_list)))
@@ -183,10 +187,14 @@ def main(config):
 
     print(spec_base_app_list)
 
+    # start id: start id is 0,0,0 means profiling-0 cluster-0-0 checkpoint-0-0-0
+    # times 1,2,3 means once profiling, per profiling twice cluster, per cluster third times checkpoint
     set_startid_times(base_config["start_id"], base_config["times"])
 
+    # if not set already exists archive id, script will create new archive id, and generate folder tree
     generate_folders(base_config, archive_id_config)
 
+    # if not set already exists archive id, script will generate benchmark assembly, generate rootfs, build bbl, and start checkpoint
     if base_config["archive_id"] is None:
         generate_specapp_assembly(spec_base_app_list, base_config["elf_folder"], base_config["max_threads"])
 
@@ -221,6 +229,8 @@ def main(config):
                         future.cancel()
                     e.shutdown(wait=False)
             #        generate_result(def_config()["buffer"], os.path.join(def_config()["buffer"], "logs"))
+
+    # if set already exists archive id, will start checkpoint immidiatly, but archive must have valid binary file
     else:
         spec_app_execute_list = []
         for spec_app in spec_app_list:

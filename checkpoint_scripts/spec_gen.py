@@ -3959,6 +3959,7 @@ def generate_run_sh(scripts_folder, elf_folder, spec, elf_suffix, dest_path, cop
     lines.append(f"md5sum /spec/{spec_bin}")
 
     output_redirect = (" ").join([">", "out.log", "2>", "err.log"]) if redirect_output else ""
+
     taskN = []
     for i in range(0, int(copy)):
         taskN.append("#!/bin/sh")
@@ -3967,7 +3968,7 @@ def generate_run_sh(scripts_folder, elf_folder, spec, elf_suffix, dest_path, cop
         taskN.append("date -R")
         if withTrap:
             taskN.append("/spec_common/before_workload")
-        taskN.append(f"cd /spec && ./{spec_bin} {spec_cmd} {output_redirect}")
+        taskN.append(f'cd /spec && ./{spec_bin} {spec_cmd} {output_redirect}')
         taskN.append("date -R")
         if withTrap:
             taskN.append("/spec_common/trap")
