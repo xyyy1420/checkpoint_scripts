@@ -30,13 +30,13 @@ default_config = {
         os.environ.get("QEMU_HOME"),
         "QEMU":
         os.path.join(os.environ.get("QEMU_HOME"), "build",
-                     "qemu-riscv64-system"),
+                     "qemu-system-riscv64"),
         "memory":
         "8G",
         "smp":
         "1",
         "profiling_plugin":
-        os.path.join(os.environ.get("QEMU_HOME"), "build", "contrib", "plugin",
+        os.path.join(os.environ.get("QEMU_HOME"), "build", "contrib", "plugins",
                      "libprofiling.so"),
     },
     "utils": {
@@ -100,13 +100,27 @@ class CheckpointTree:
 
         mkdir(os.path.split(out_file)[0])
 
-        with open(out_file, "w") as out, open(err_file, "w") as err:
-            command = self.value["command"]
-            print(self.value)
-            print(self.value["utils"]["workload"], self.value["execute_mode"])
-            res = subprocess.run(command, stdout=out, stderr=err)
-            print(command + "Execute finish")
-            return res
+        try:
+            with open(out_file, "w", encoding="utf-8") as out, open(err_file, "w", encoding="utf-8") as err:
+                command = self.value["command"]
+                print((command))
+                print(self.value["utils"]["workload"], self.value["execute_mode"])
+                res = subprocess.run(command, stdout=out, stderr=err, check=False)
+                print(command + "Execute finish")
+                return res
+        except subprocess.CalledProcessError as e:
+            print(f"Command '{e.cmd}' returned non-zero exit status {e.returncode}")
+            with open(err_file, "a", encoding="utf-8") as err:
+                err.write(f"\nCommand '{e.cmd}' returned non-zero exit status {e.returncode}\n")
+        except FileNotFoundError as e:
+            print(f"File not found error: {e}")
+            with open(err_file, "a", encoding="utf-8") as err:
+                err.write(f"\nFile not found error: {e}\n")
+        except Exception as e:
+            print(f"An unexpected error occurred: {e}")
+            with open(err_file, "a", encoding="utf-8") as err:
+                err.write(f"\nAn unexpected error occurred: {e}\n")
+            raise  # Rethrow the exception after logging it
 
     def __repr__(self):
         return "TreeNode({}, {}, {}, {})".format(
@@ -196,12 +210,12 @@ def qemu_profiling_command(config):
     command = [
         "numactl","--cpunodebind={}".format(config["cpu_bind"]),"--membind={}".format(config["mem_bind"]),
         config["QEMU"]["QEMU"],
-        "-bios", "{}/{}{}".format(config["utils"]["workload_folder"], config["utils"]["workload"], config["utils"]["bin_suffix"]),
+        "-bios", f'{config["utils"]["workload_folder"]}/{config["utils"]["workload"]}{config["utils"]["bin_suffix"]}',
         "-M", "nemu",
         "-nographic",
         "-m", config["QEMU"]["memory"],
         "-smp", config["QEMU"]["smp"],
-        "-cpu", "rv64,v=true,vlen=128",
+        "-cpu", "rv64,v=true,vlen=128,h=false,sv39=true,sv48=false,sv57=false,sv64=false",
         "-plugin", "{},workload={},intervals={},target={}".format(
             config["QEMU"]["profiling_plugin"],
             config["utils"]["workload"],
@@ -209,6 +223,7 @@ def qemu_profiling_command(config):
             os.path.join(config["utils"]["buffer"], config["profiling"]["config"], config["utils"]["workload"]))
     ]
     return command
+
 
 def cluster_command(config):
     seedkm = random.randint(100000, 999999)
@@ -249,17 +264,17 @@ def qemu_checkpoint_command(config):
         "numactl","--cpunodebind={}".format(config["cpu_bind"]),"--membind={}".format(config["mem_bind"]),
         config["QEMU"]["QEMU"],
         "-bios", "{}/{}{}".format(config["utils"]["workload_folder"], config["utils"]["workload"], config["utils"]["bin_suffix"]),
-        "-M", "nemu",
+        "-M", f'nemu,simpoint-path={os.path.join(config["utils"]["buffer"], config["cluster"]["config"])},workload={config["utils"]["workload"]},cpt-interval={config["utils"]["interval"]},output-base-dir={config["utils"]["buffer"]},config-name={config["checkpoint"]["config"]},checkpoint-mode={"SimpointCheckpoint"}',
         "-nographic",
         "-m", config["QEMU"]["memory"],
         "-smp", config["QEMU"]["smp"],
-        "-cpu", "rv64,v=true,vlen=128",
-        "-simpoint-path", os.path.join(config["utils"]["buffer"], config["cluster"]["config"]),
-        "-workload", config["utils"]["workload"],
-        "-cpt-interval", config["utils"]["interval"],
-        "-output-base-dir", config["utils"]["buffer"],
-        "-config-name", config["checkpoint"]["config"],
-        "-checkpoint-mode", "SimpointCheckpoint"
+        "-cpu", "rv64,v=true,vlen=128,h=false,sv39=true,sv48=false,sv57=false,sv64=false",
+#        "-simpoint-path", os.path.join(config["utils"]["buffer"], config["cluster"]["config"]),
+#        "-workload", config["utils"]["workload"],
+#        "-cpt-interval", config["utils"]["interval"],
+#        "-output-base-dir", config["utils"]["buffer"],
+#        "-config-name", config["checkpoint"]["config"],
+#        "-checkpoint-mode", "SimpointCheckpoint"
     ]
     return command
 
@@ -277,6 +292,8 @@ def profiling_func(profiling_id, config):
         profiling_config["command"] = nemu_profiling_command(profiling_config)
     else:
         profiling_config["command"] = qemu_profiling_command(profiling_config)
+
+    print(profiling_config["command"])
 
     global profiling_roots
     profiling_roots = CheckpointTree(profiling_config)
@@ -347,6 +364,7 @@ def generate_command(workload_folder,
                      log_folder,
                      cpu_bind,
                      mem_bind,
+                     copies,
                      profiling_func=profiling_func,
                      cluster_func=cluster_func,
                      checkpoint_func=checkpoint_func,
@@ -357,6 +375,8 @@ def generate_command(workload_folder,
     config["utils"]["buffer"] = buffer
     config["utils"]["bin_suffix"] = bin_suffix
     config["emu"] = emu
+    if config["emu"] == "QEMU":
+        config["QEMU"]["smp"] = copies
     config["utils"]["log_folder"] = log_folder
     config["cpu_bind"] = cpu_bind
     config["mem_bind"] = mem_bind

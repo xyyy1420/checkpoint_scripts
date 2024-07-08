@@ -3873,6 +3873,7 @@ def get_default_initramfs_file():
         "dir /spec_common 755 0 0",
         "file /spec_common/before_workload ${RISCV_ROOTFS_HOME}/rootfsimg/build/before_workload 755 0 0",
         "file /spec_common/trap ${RISCV_ROOTFS_HOME}/rootfsimg/build/trap 755 0 0",
+        "file /spec_common/qemu_trap ${RISCV_ROOTFS_HOME}/rootfsimg/build/qemu_trap 755 0 0",
         "", "# SPEC", "dir /spec 755 0 0",
         "file /spec/run.sh ${RISCV_ROOTFS_HOME}/rootfsimg/run.sh 755 0 0"
     ]
@@ -3896,11 +3897,17 @@ def traverse_path(path, stack=""):
 
 
 # original func is: https://github.com/OpenXiangShan/riscv-rootfs/blob/c61a659b454e5b038b5374a9091b29ad4995f13f/rootfsimg/spec_gen.py#L558
-def generate_initramfs(scripts_folder, elf_folder, spec, elf_suffix, dest_path, copy=1, cpu2017=True):
+def generate_initramfs(scripts_folder, elf_folder, spec, elf_suffix, dest_path, copy=1, CPU2017=True):
     lines = get_default_initramfs_file().copy()
-    spec_files = get_cpu2017_info(os.environ.get("CPU2017_RUN_DIR"),
-                               elf_folder,
-                               elf_suffix)[spec][0]
+    if CPU2017:
+        spec_files = get_cpu2017_info(os.environ.get("CPU2017_RUN_DIR"),
+                                      elf_folder,
+                                      elf_suffix)[spec][0]
+    else:
+        spec_files = get_cpu2006_info(os.environ.get("CPU2006_RUN_DIR"),
+                                      elf_folder,
+                                      elf_suffix)[spec][0]
+
     for i, filename in enumerate(spec_files):
         if len(filename.split()) == 1:
             # print(f"default {filename} to file 755 0 0")
@@ -3933,29 +3940,34 @@ def generate_initramfs(scripts_folder, elf_folder, spec, elf_suffix, dest_path, 
 
 
 # original func is: https://github.com/OpenXiangShan/riscv-rootfs/blob/c61a659b454e5b038b5374a9091b29ad4995f13f/rootfsimg/spec_gen.py#L585
-def generate_run_sh(scripts_folder, elf_folder, spec, elf_suffix, dest_path, copy=1, withTrap=False, CPU2017=False, redirect_output=False):
+def generate_run_sh(scripts_folder, elf_folder, spec, elf_suffix, dest_path, copy=1, withTrap=False, CPU2017=False, redirect_output=False, emu="NEMU"):
     lines = []
     lines.append("#!/bin/sh")
 
     if CPU2017:
         SPEC_20XX = "SPEC2017"
         cpu20xx_run_dir = os.environ.get("CPU2017_RUN_DIR")
+        spec_bin = get_cpu2017_info(cpu20xx_run_dir,
+                                 elf_folder,
+                                 elf_suffix)[spec][0][0].split("/")[-1]
+        spec_cmd = " ".join(
+            get_cpu2017_info(cpu20xx_run_dir,
+                          elf_folder, elf_suffix)[spec][1])
     else:
         SPEC_20XX = "SPEC2006"
         cpu20xx_run_dir = os.environ.get("CPU2006_RUN_DIR")
+        spec_bin = get_cpu2006_info(cpu20xx_run_dir,
+                                 elf_folder,
+                                 elf_suffix)[spec][0][0].split("/")[-1]
+        spec_cmd = " ".join(
+            get_cpu2006_info(cpu20xx_run_dir,
+                          elf_folder, elf_suffix)[spec][1])
 
     lines.append(f"echo '===== Start running {SPEC_20XX} ====='")
-    
-    spec_bin = get_cpu2017_info(cpu20xx_run_dir,
-                             elf_folder,
-                             elf_suffix)[spec][0][0].split("/")[-1]
-    spec_cmd = " ".join(
-        get_cpu2017_info(cpu20xx_run_dir,
-                      elf_folder, elf_suffix)[spec][1])
-    
+
     lines.append(f"echo '======== BEGIN {spec} ========'")
     lines.append("set -x")
-    lines.append("cat /dev/urandom | head -c 16 | busybox hexdump")
+    #lines.append("cat /dev/urandom | head -c 16 | busybox hexdump")
     lines.append(f"md5sum /spec/{spec_bin}")
 
     output_redirect = (" ").join([">", "out.log", "2>", "err.log"]) if redirect_output else ""
@@ -3968,21 +3980,37 @@ def generate_run_sh(scripts_folder, elf_folder, spec, elf_suffix, dest_path, cop
         taskN.append("date -R")
         if withTrap:
             taskN.append("/spec_common/before_workload")
-        taskN.append(f'cd /spec && ./{spec_bin} {spec_cmd} {output_redirect}')
+           
+        taskN.append(f'cd /spec && ./{spec_bin} {spec_cmd} {output_redirect} ')
         taskN.append("date -R")
         if withTrap:
-            taskN.append("/spec_common/trap")
-        lines.append(f"/bin/busybox taskset -c {i} /spec/task{i}.sh")
+            if emu=="NEMU":
+                taskN.append("/spec_common/trap")
+            else:
+                taskN.append("/spec_common/qemu_trap")
+
+#        if i == (int(copy) - 1):
+#            backend_run = ''
+#        else:
+        backend_run = '&'
+ 
+        lines.append(f"/bin/busybox taskset -c {i} /spec/task{i}.sh {backend_run}")
+        lines.append(f"PID{i}=$!")
         with open(os.path.join(dest_path, f"task{i}.sh"), "w", encoding="utf-8") as f:
             f.writelines(map(lambda x: x + "\n", taskN))
         with open(os.path.join(scripts_folder, f"{spec}_task{i}.sh"), "w", encoding="utf-8") as f:
             f.writelines(map(lambda x: x + "\n", taskN))
         taskN = []
+    for i in range(0, int(copy)):
+        lines.append(f"wait $PID{i}")
 
     lines.append("ls /spec")
 
     if withTrap:
-        lines.append("/spec_common/trap")
+        if emu=="NEMU":
+            taskN.append("/spec_common/trap")
+        else:
+            taskN.append("/spec_common/qemu_trap")
 
     lines.append(f"echo '======== END   {spec} ========'")
     lines.append(f"echo '===== Finish running {SPEC_20XX} ====='")
@@ -3995,11 +4023,11 @@ def generate_run_sh(scripts_folder, elf_folder, spec, elf_suffix, dest_path, cop
         f.writelines(map(lambda x: x + "\n", lines))
 
 
-def prepare_rootfs(scripts_folder, elf_folder, spec, copy, withTrap=False, CPU2017=False, redirect_output=False):
+def prepare_rootfs(scripts_folder, elf_folder, spec, copy, withTrap=False, CPU2017=False, redirect_output=False, emu="NEMU"):
     generate_initramfs(scripts_folder=scripts_folder, elf_folder=elf_folder, spec=spec,
                        elf_suffix="",
-                       dest_path=os.path.join(os.environ.get("RISCV_ROOTFS_HOME"), "rootfsimg"), copy=copy, cpu2017=CPU2017)
+                       dest_path=os.path.join(os.environ.get("RISCV_ROOTFS_HOME"), "rootfsimg"), copy=copy, CPU2017=CPU2017)
     generate_run_sh(scripts_folder=scripts_folder, elf_folder=elf_folder, spec=spec,
                     elf_suffix="", copy=copy,
                     dest_path=os.path.join(os.environ.get("RISCV_ROOTFS_HOME"), "rootfsimg"),
-                    withTrap=withTrap, CPU2017=CPU2017, redirect_output=redirect_output)
+                    withTrap=withTrap, CPU2017=CPU2017, redirect_output=redirect_output, emu=emu)

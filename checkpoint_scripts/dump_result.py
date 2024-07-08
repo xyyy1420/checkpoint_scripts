@@ -5,8 +5,8 @@ from pathlib import Path
 from itertools import product
 
 app_list = [
-    "bwaves", "gamess_cytosine", "gamess_gradient", "gamess_triazolium", "milc",
-    "zeusmp", "gromacs", "cactusADM", "leslie3d", "namd", "dealII",
+    "bwaves", "gamess_cytosine", "gamess_gradient", "gamess_triazolium",
+    "milc", "zeusmp", "gromacs", "cactusADM", "leslie3d", "namd", "dealII",
     "soplex_pds-50", "soplex_ref", "povray", "calculix", "GemsFDTD", "tonto",
     "lbm", "wrf", "sphinx3"
 ]
@@ -27,17 +27,18 @@ spec2017_int_list = [
     "deepsjeng", "leela", "exchange2", "xz_cld", "xz_combined", "xz_cpu2006"
 ]
 
-spec2017_fp_list=list(set(spec_2017_list)-set(spec2017_int_list))
+spec2017_fp_list = list(set(spec_2017_list) - set(spec2017_int_list))
 
-def profiling_instrs(profiling_log, spec_app, using_new_script=True):
+
+def profiling_instrs(profiling_log, spec_app, using_new_script=False):
     regex = r".*total guest instructions = (.*)\x1b.*"
     new_path = os.path.join(profiling_log, spec_app, "profiling.out.log")
     old_path = os.path.join(profiling_log, "{}-out.log".format(spec_app))
 
     if using_new_script:
-        path=new_path
+        path = new_path
     else:
-        path=old_path
+        path = old_path
 
     with open(path, "r", encoding="utf-8") as f:
         for i in f.readlines():
@@ -68,23 +69,19 @@ def cluster_weight(cluster_path, spec_app):
     return points
 
 
-
-def per_checkpoint_generate_json(
-    profiling_log, cluster_path, app_list, target_path
-):
+def per_checkpoint_generate_json(profiling_log, cluster_path, app_list,
+                                 target_path):
     result = {}
     for spec in app_list:
-        result.update(
-            {
-                spec:
-                    {
-                        "insts": profiling_instrs(profiling_log, spec),
-                        'points': cluster_weight(cluster_path, spec)
-                    }
+        result.update({
+            spec: {
+                "insts": profiling_instrs(profiling_log, spec),
+                'points': cluster_weight(cluster_path, spec)
             }
-        )
+        })
     with open(os.path.join(target_path), "w") as f:
         f.write(json.dumps(result))
+
 
 def per_checkpoint_generate_worklist(cpt_path, target_path):
     cpt_path = cpt_path + "/"
@@ -108,31 +105,70 @@ def per_checkpoint_generate_worklist(cpt_path, target_path):
 def generate_result_list(base_path, times, ids):
     result_list = []
 
-    for i, j, k in product(range(ids[0], times[0]), range(ids[1], times[1]), range(ids[2], times[2])):
+    for i, j, k in product(range(ids[0], times[0]), range(ids[1], times[1]),
+                           range(ids[2], times[2])):
         cluster = f"cluster-{i}-{j}"
         profiling = f"profiling-{k}"
         checkpoint = f"checkpoint-{i}-{j}-{k}"
         result_list.append({
-            "cl_res": os.path.join(base_path, cluster),
-            "profiling_log": os.path.join(base_path, "logs", profiling),
-            "checkpoint_path": os.path.join(base_path, checkpoint),
-            "json_path": os.path.join(base_path, checkpoint, f"{cluster}.json"),
-            "list_path": os.path.join(base_path, checkpoint, "checkpoint.lst"),
+            "cl_res":
+            os.path.join(base_path, cluster),
+            "profiling_log":
+            os.path.join(base_path, "logs", profiling),
+            "checkpoint_path":
+            os.path.join(base_path, checkpoint),
+            "json_path":
+            os.path.join(base_path, checkpoint, f"{cluster}.json"),
+            "list_path":
+            os.path.join(base_path, checkpoint, "checkpoint.lst"),
         })
-        
+
+    print(result_list)
     return result_list
 
+
+#base_path="/nfs/home/jiaxiaoyu/profiling_env/auto_generate_env/archive/gcc12.2.0_rv64gc_base_nospecial_NEMU_archgroup_2024-05-31-19-01"
+#base_path="/nfs/home/share/jiaxiaoyu/simpoint_checkpoint_archive/spec06_rv64gcbv_20m_gcc14.1.0_libquantum_hmmer_h264_without_segment"
+
+#result = {
+#    "cl_res":
+#        os.path.join(
+#            base_path, "cluster-0-0"
+#        ),
+#    "profiling_log":
+#        os.path.join(
+#            base_path, "logs","profiling-0"
+#        ),
+#    "checkpoint_path":
+#        os.path.join(
+#            base_path, "checkpoint-0-0-0"
+#        ),
+#    "json_path":
+#        os.path.join(
+#            base_path, "checkpoint-0-0-0","cluster-0-0.json"
+#        ),
+#    "list_path":
+#        os.path.join(
+#            base_path, "checkpoint-0-0-0","checkpoint.lst"
+#        )
+#}
 
 
 def dump_result(base_path, spec_app_list, times, ids):
     result_list = generate_result_list(base_path, times, ids)
 
     for result in result_list:
-        per_checkpoint_generate_json(result["profiling_log"], result["cl_res"], spec_app_list, result["json_path"])
-        per_checkpoint_generate_worklist(result["checkpoint_path"], result["list_path"])
+        per_checkpoint_generate_json(result["profiling_log"], result["cl_res"],
+                                     spec_app_list, result["json_path"])
+        per_checkpoint_generate_worklist(result["checkpoint_path"],
+                                         result["list_path"])
 
-base_path = "/path/to/archive"
+
+#/nfs/home/share/jiaxiaoyu/simpoint_checkpoint_archive/spec06_rv64gcbv_20m_gcc14.1.0_libquantum_hmmer_h264_without_segment/checkpoint-0-0-0/h264ref_sss
+spec_list=["hmmer_nph3", "hmmer_retro", "libquantum", "h264ref_foreman.baseline", "h264ref_foreman.main", "h264ref_sss"]
+#base_path = "/nfs/home/share/jiaxiaoyu/simpoint_checkpoint_archive/spec17-rv64gcb-O3-20m-gcc12.2.0-mix-with-special_wrf"
+base_path = "/nfs/home/share/jiaxiaoyu/simpoint_checkpoint_archive/spec06_rv64gcbv_20m_gcc14.1.0_libquantum_hmmer_h264_without_segment"
 times = [1, 1, 1]
 ids = [0, 0, 0]
 
-dump_result(base_path, spec_2017_list, times, ids)
+dump_result(base_path, spec_list, times, ids)

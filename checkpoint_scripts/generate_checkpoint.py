@@ -85,7 +85,7 @@ def generate_buffer_folder_name(base_config, archive_id_config):
         spec_20xx = "spec17"
     else:
         spec_20xx = "spec06"
-    folder_name = f'{spec_20xx}_{archive_id_config["gcc_version"]}_{archive_id_config["riscv_ext"]}_{archive_id_config["base_or_fixed"]}_{archive_id_config["special_flag"]}_{archive_id_config["emulator"]}_{archive_id_config["group"]}_{time}'
+    folder_name = f'{spec_20xx}_{archive_id_config["gcc_version"]}_{archive_id_config["riscv_ext"]}_{archive_id_config["base_or_fixed"]}_{archive_id_config["special_flag"]}_{base_config["emulator"]}_{archive_id_config["group"]}_{time}'
     return folder_name
 
 
@@ -132,7 +132,8 @@ def copy_to_dst(file, src_dir, dst_dir):
         shutil.copy(os.path.join(src_dir, file), os.path.join(dst_dir, file))
         return os.path.join(dst_dir, file)
     else:
-        print(file, "Not found")
+        print(os.path.join(src_dir, file), "Not found")
+        exit(1)
         return None
 
 spec_2006_list=[]
@@ -200,21 +201,42 @@ def main(config):
 
         spec_app_execute_list = []
         for spec_app in spec_app_list:
-            prepare_rootfs(scripts_folder=build_config()["scripts_folder"], elf_folder=prepare_config()["elf_folder"], spec=spec_app, withTrap=True, copy=base_config["copies"], CPU2017=base_config["CPU2017"], redirect_output=base_config["redirect_output"])
+            prepare_rootfs(scripts_folder=build_config()["scripts_folder"],
+                           elf_folder=prepare_config()["elf_folder"],
+                           spec=spec_app,
+                           withTrap=True,
+                           copy=base_config["copies"],
+                           CPU2017=base_config["CPU2017"],
+                           redirect_output=base_config["redirect_output"],
+                           emu=base_config["emulator"])
 
             if base_config["generate_rootfs_script_only"]:
                 continue
 
-            builder = Builder(env_vars_to_check=["RISCV_PK_HOME"])
             if base_config["emulator"] == "QEMU":
-                builder.build_opensbi_payload(spec_app, build_config()["build_log"], build_config()["bin_folder"], "", build_config()["gcpt_bin_folder"], "", build_config()["assembly_folder"])
+                if base_config["bootloader"] == "opensbi":
+                    builder = Builder(env_vars_to_check=["LINUX_HOME", "OPENSBI_HOME", "XIANGSHAN_FDT", "GCPT_HOME"])
+                    builder.build_opensbi_payload(spec_app, build_config()["build_log"], build_config()["gcpt_bin_folder"], "", build_config()["gcpt_bin_folder"], "", build_config()["assembly_folder"], True)
+                else:
+                    builder = Builder(env_vars_to_check=["RISCV_PK_HOME", "GCPT_HOME"])
+                    builder.build_spec_bbl(spec_app, build_config()["build_log"], build_config()["gcpt_bin_folder"], "", build_config()["assembly_folder"], True)
             else:
-                builder.build_spec_bbl(spec_app, build_config()["build_log"], build_config()["bin_folder"], "", build_config()["assembly_folder"])
+                builder = Builder(env_vars_to_check=["RISCV_PK_HOME", "GCPT_HOME"])
+                builder.build_spec_bbl(spec_app, build_config()["build_log"], build_config()["bin_folder"], "", build_config()["assembly_folder"], False)
 
             if base_config["build_bbl_only"]:
                 continue
 
-            root_noods = generate_command(workload_folder=build_config()["bin_folder"], workload=spec_app, buffer=def_config()["buffer"], bin_suffix="", emu=base_config["emulator"], log_folder=os.path.join(def_config()["buffer"], "logs"), cpu_bind=base_config["cpu_bind"], mem_bind=base_config["mem_bind"])
+            root_noods = generate_command(
+                workload_folder=build_config()["gcpt_bin_folder"] if base_config["emulator"] == "QEMU" else build_config()["bin_folder"],
+                workload=spec_app,
+                buffer=def_config()["buffer"],
+                bin_suffix="",
+                emu=base_config["emulator"],
+                log_folder=os.path.join(def_config()["buffer"], "logs"),
+                cpu_bind=base_config["cpu_bind"],
+                mem_bind=base_config["mem_bind"],
+                copies=str(base_config["copies"]))
 
             spec_app_execute_list.append(root_noods)
 
@@ -234,7 +256,16 @@ def main(config):
     else:
         spec_app_execute_list = []
         for spec_app in spec_app_list:
-            root_noods = generate_command(workload_folder=build_config()["bin_folder"], workload=spec_app, buffer=def_config()["buffer"], bin_suffix="", emu=base_config["emulator"], log_folder=os.path.join(def_config()["buffer"], "logs"), cpu_bind=base_config["cpu_bind"], mem_bind=base_config["mem_bind"])
+            root_noods = generate_command(
+                workload_folder=build_config()["gcpt_bin_folder"] if base_config["emulator"] == "QEMU" else build_config()["bin_folder"],
+                workload=spec_app,
+                buffer=def_config()["buffer"],
+                bin_suffix="",
+                emu=base_config["emulator"],
+                log_folder=os.path.join(def_config()["buffer"], "logs"),
+                cpu_bind=base_config["cpu_bind"],
+                mem_bind=base_config["mem_bind"],
+                copies=str(base_config["copies"]))
 
             #            list(map(print_tree, root_noods))
             spec_app_execute_list.append(root_noods)
@@ -248,7 +279,7 @@ def main(config):
                 for future in futures:
                     future.cancel()
                 e.shutdown(wait=False)
-                
+
 #
 
 
