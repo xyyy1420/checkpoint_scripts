@@ -20,7 +20,8 @@ default_config = {
     "buffer": "",
     "archive_folder": "archive",
     "archive_id": "",
-    "elf_suffix": "_base.riscv64-linux-gnu-gcc12.2.0",
+    "resume_after": None,
+    "elf_suffix": "",
 }
 
 
@@ -255,6 +256,7 @@ def main(config):
     # if set already exists archive id, will start checkpoint immidiatly, but archive must have valid binary file
     else:
         spec_app_execute_list = []
+        resume_after = base_config.get("resume_after", None)
         for spec_app in spec_app_list:
             root_noods = generate_command(
                 workload_folder=build_config()["gcpt_bin_folder"] if base_config["emulator"] == "QEMU" else build_config()["bin_folder"],
@@ -265,7 +267,8 @@ def main(config):
                 log_folder=os.path.join(def_config()["buffer"], "logs"),
                 cpu_bind=base_config["cpu_bind"],
                 mem_bind=base_config["mem_bind"],
-                copies=str(base_config["copies"]))
+                copies=str(base_config["copies"]),
+                resume_after=resume_after)
 
             #            list(map(print_tree, root_noods))
             spec_app_execute_list.append(root_noods)
