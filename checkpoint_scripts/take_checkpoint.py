@@ -101,6 +101,11 @@ class CheckpointTree:
         mkdir(os.path.split(out_file)[0])
 
         try:
+            if "backup_commands" in self.value:
+                for command in self.value["backup_commands"]:
+                    res = subprocess.run(command, check=True)
+                    print("Backup:", command, res.returncode, res.stdout, res.stderr)
+
             with open(out_file, "w", encoding="utf-8") as out, open(err_file, "w", encoding="utf-8") as err:
                 command = self.value["command"]
                 print((command))
@@ -225,14 +230,18 @@ def qemu_profiling_command(config):
     return command
 
 
-def cluster_command(config):
+def cluster_command(config, is_resume_from):
     seedkm = random.randint(100000, 999999)
     seedproj = random.randint(100000, 999999)
     mkdir(os.path.split(os.path.join(config["utils"]["buffer"], config["cluster"]["config"], config["utils"]["workload"], "simpoints0"))[0])
+    bbv_path = os.path.join(config["utils"]["buffer"], config["profiling"]["config"], config["utils"]["workload"], "simpoint_bbv.gz")
+    if is_resume_from:
+        # make sure bbv.gz has been generated
+        assert os.path.exists(bbv_path)
     command = [
         "numactl","--cpunodebind={}".format(config["cpu_bind"]),"--membind={}".format(config["mem_bind"]),
         config["NEMU"]["simpoint"],
-        "-loadFVFile", os.path.join(config["utils"]["buffer"], config["profiling"]["config"], config["utils"]["workload"], "simpoint_bbv.gz"),
+        "-loadFVFile", bbv_path,
         "-saveSimpoints", os.path.join(config["utils"]["buffer"], config["cluster"]["config"], config["utils"]["workload"], "simpoints0"),
         "-saveSimpointWeights", os.path.join(config["utils"]["buffer"], config["cluster"]["config"], config["utils"]["workload"], "weights0"),
         "-inputVectorsGzipped",
@@ -243,28 +252,34 @@ def cluster_command(config):
     ]
     return command
 
-def nemu_checkpoint_command(config):
+def nemu_checkpoint_command(config, is_resume_from):
+    simpoint_path = os.path.join(config["utils"]["buffer"], config["cluster"]["config"])
+    if is_resume_from:
+        assert os.path.exists(simpoint_path)
     command = [
-        "numactl","--cpunodebind={}".format(config["cpu_bind"]),"--membind={}".format(config["mem_bind"]),
+        # "numactl","--cpunodebind={}".format(config["cpu_bind"]),"--membind={}".format(config["mem_bind"]),
         config["NEMU"]["NEMU"],
         "{}/{}{}".format(config["utils"]["workload_folder"], config["utils"]["workload"], config["utils"]["bin_suffix"]),
         "-D", config["utils"]["buffer"],
         "-w", config["utils"]["workload"],
         "-C", config["checkpoint"]["config"],
         "-b",
-        "-S", os.path.join(config["utils"]["buffer"], config["cluster"]["config"]),
+        "-S", simpoint_path,
         "--cpt-interval", config["utils"]["interval"],
         "-r", config["NEMU"]["gcpt_restore"],
         "--checkpoint-format", config["utils"]["compile_format"]
     ]
     return command
 
-def qemu_checkpoint_command(config):
+def qemu_checkpoint_command(config, is_resume_from):
+    simpoint_path = os.path.join(config["utils"]["buffer"], config["cluster"]["config"])
+    if is_resume_from:
+        assert os.path.exists(simpoint_path)
     command = [
-        "numactl","--cpunodebind={}".format(config["cpu_bind"]),"--membind={}".format(config["mem_bind"]),
+        # "numactl","--cpunodebind={}".format(config["cpu_bind"]),"--membind={}".format(config["mem_bind"]),
         config["QEMU"]["QEMU"],
         "-bios", "{}/{}{}".format(config["utils"]["workload_folder"], config["utils"]["workload"], config["utils"]["bin_suffix"]),
-        "-M", f'nemu,simpoint-path={os.path.join(config["utils"]["buffer"], config["cluster"]["config"])},workload={config["utils"]["workload"]},cpt-interval={config["utils"]["interval"]},output-base-dir={config["utils"]["buffer"]},config-name={config["checkpoint"]["config"]},checkpoint-mode={"SimpointCheckpoint"}',
+        "-M", f'nemu,simpoint-path={simpoint_path},workload={config["utils"]["workload"]},cpt-interval={config["utils"]["interval"]},output-base-dir={config["utils"]["buffer"]},config-name={config["checkpoint"]["config"]},checkpoint-mode={"SimpointCheckpoint"}',
         "-nographic",
         "-m", config["QEMU"]["memory"],
         "-smp", config["QEMU"]["smp"],
@@ -278,7 +293,7 @@ def qemu_checkpoint_command(config):
     ]
     return command
 
-def profiling_func(profiling_id, config):
+def profiling_func(profiling_id, config, dry_run=False):
     profiling_config = copy.deepcopy(config)
 
     profiling_config["profiling"]["config"] = "{}-{}".format(
@@ -288,10 +303,16 @@ def profiling_func(profiling_id, config):
     profiling_config["err-log"] = os.path.join(config["utils"]["log_folder"], "profiling-{}".format(profiling_id), config["utils"]["workload"], "profiling.err.log")
     profiling_config["execute_mode"] = "profiling"
 
-    if profiling_config["emu"] == "NEMU":
-        profiling_config["command"] = nemu_profiling_command(profiling_config)
+    if not dry_run:
+        if profiling_config["emu"] == "NEMU":
+            profiling_config["command"] = nemu_profiling_command(profiling_config)
+        else:
+            profiling_config["command"] = qemu_profiling_command(profiling_config)
     else:
-        profiling_config["command"] = qemu_profiling_command(profiling_config)
+        bak_out_log_path = os.path.join(config["utils"]["log_folder"], "profiling-{}".format(profiling_id), config["utils"]["workload"], "old_profiling.out.log")
+        bak_err_log_path = os.path.join(config["utils"]["log_folder"], "profiling-{}".format(profiling_id), config["utils"]["workload"], "old_profiling.err.log")
+        profiling_config["backup_commands"] = [['cp', profiling_config["out-log"], bak_out_log_path], ['cp', profiling_config["err-log"], bak_err_log_path]]
+        profiling_config["command"] = ["echo", '"dry_run_profiling_command"']
 
     print(profiling_config["command"])
 
@@ -301,7 +322,7 @@ def profiling_func(profiling_id, config):
     return profiling_config["profiling"]["config"]
 
 
-def cluster_func(profiling_id, cluster_id, config):
+def cluster_func(profiling_id, cluster_id, config, is_resume_from=False, dry_run=False):
     cluster_config = copy.deepcopy(config)
 
     cluster_config["profiling"]["config"] = "{}-{}".format(
@@ -315,7 +336,10 @@ def cluster_func(profiling_id, cluster_id, config):
     cluster_config["out-log"] = os.path.join(config["utils"]["log_folder"], "cluster-{}-{}".format(profiling_id, cluster_id), config["utils"]["workload"],"cluster.out.log")
     cluster_config["err-log"] = os.path.join(config["utils"]["log_folder"], "cluster-{}-{}".format(profiling_id, cluster_id), config["utils"]["workload"],"cluster.err.log")
 
-    cluster_config["command"] = cluster_command(cluster_config)
+    if not dry_run:
+        cluster_config["command"] = cluster_command(cluster_config, is_resume_from=is_resume_from)
+    else:
+        cluster_config["command"] = ['echo', 'dry_run_cluster_command']
 
     child = CheckpointTree(cluster_config)
     global profiling_roots
@@ -324,7 +348,7 @@ def cluster_func(profiling_id, cluster_id, config):
     return cluster_config["cluster"]["config"]
 
 
-def checkpoint_func(profiling_id, cluster_id, checkpoint_id, config):
+def checkpoint_func(profiling_id, cluster_id, checkpoint_id, config, is_resume_from=False):
     checkpoint_config = copy.deepcopy(config)
 
     checkpoint_config["profiling"]["config"] = "{}-{}".format(
@@ -344,10 +368,10 @@ def checkpoint_func(profiling_id, cluster_id, checkpoint_id, config):
 
     if checkpoint_config["emu"] == "NEMU":
         checkpoint_config["command"] = nemu_checkpoint_command(
-            checkpoint_config)
+            checkpoint_config, is_resume_from=is_resume_from)
     else:
         checkpoint_config["command"] = qemu_checkpoint_command(
-            checkpoint_config)
+            checkpoint_config, is_resume_from=is_resume_from)
 
     child = CheckpointTree(checkpoint_config)
     global profiling_roots
@@ -365,6 +389,7 @@ def generate_command(workload_folder,
                      cpu_bind,
                      mem_bind,
                      copies,
+                     resume_after=None,
                      profiling_func=profiling_func,
                      cluster_func=cluster_func,
                      checkpoint_func=checkpoint_func,
@@ -389,9 +414,19 @@ def generate_command(workload_folder,
         profiling_roots = None
         return profiling_roots
 
-    p_func = functools.partial(profiling_func, config=config)
-    cl_func = functools.partial(cluster_func, config=config)
-    c_func = functools.partial(checkpoint_func, config=config)
+
+    if resume_after is None or len(resume_after) == 0:
+        p_func = functools.partial(profiling_func, config=config)
+        cl_func = functools.partial(cluster_func, config=config)
+        c_func = functools.partial(checkpoint_func, config=config)
+    elif resume_after == "profiling":
+        p_func = functools.partial(profiling_func, config=config, dry_run=True)
+        cl_func = functools.partial(cluster_func, config=config, is_resume_from=True)
+        c_func = functools.partial(checkpoint_func, config=config)
+    elif resume_after == "cluster":
+        p_func = functools.partial(profiling_func, config=config, dry_run=True)
+        cl_func = functools.partial(cluster_func, config=config, dry_run=True)
+        c_func = functools.partial(checkpoint_func, config=config, is_resume_from=True)
 
     print(list(itertools.starmap(p_func, profiling_configs)))
     print(list(itertools.starmap(cl_func, cluster_configs)))
