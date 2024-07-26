@@ -3874,9 +3874,11 @@ def get_default_initramfs_file():
         "file /spec_common/before_workload ${RISCV_ROOTFS_HOME}/rootfsimg/build/before_workload 755 0 0",
         "file /spec_common/trap ${RISCV_ROOTFS_HOME}/rootfsimg/build/trap 755 0 0",
         "file /spec_common/qemu_trap ${RISCV_ROOTFS_HOME}/rootfsimg/build/qemu_trap 755 0 0",
-        "", "# SPEC", "dir /spec 755 0 0",
-        "file /spec/run.sh ${RISCV_ROOTFS_HOME}/rootfsimg/run.sh 755 0 0"
+        "", "# SPEC"
     ]
+
+#, "dir /spec 755 0 0",
+#        "file /spec/run.sh ${RISCV_ROOTFS_HOME}/rootfsimg/run.sh 755 0 0"
 
 
 # original func is: https://github.com/OpenXiangShan/riscv-rootfs/blob/da983ec95858dfd6f30e9feadd534b79db37e618/rootfsimg/spec_gen.py#L544
@@ -3908,28 +3910,40 @@ def generate_initramfs(scripts_folder, elf_folder, spec, elf_suffix, dest_path, 
                                       elf_folder,
                                       elf_suffix)[spec][0]
 
+    for i in range(0, copy):
+        lines.append(f"dir /spec{i} 755 0 0")
+
+    lines.append("file /spec0/run.sh ${RISCV_ROOTFS_HOME}/rootfsimg/run.sh 755 0 0")
+
     for i, filename in enumerate(spec_files):
         if len(filename.split()) == 1:
             # print(f"default {filename} to file 755 0 0")
             basename = filename.split("/")[-1]
-            filename = f"file /spec/{basename} {filename} 755 0 0"
-            lines.append(filename)
+            for i in range(0, copy):
+                target_filename = f"file /spec{i}/{basename} {filename} 755 0 0"
+                lines.append(target_filename)
+
         elif len(filename.split()) == 3:
             node_type, name, path = filename.split()
             if node_type != "dir":
                 print(f"unknown filename: {filename}")
                 continue
             all_dirs, all_files = traverse_path(path)
-            lines.append(f"dir /spec/{name} 755 0 0")
+
+            for i in range(0, copy):
+                lines.append(f"dir /spec{i}/{name} 755 0 0")
+
             for sub_dir in all_dirs:
-                lines.append(f"dir /spec/{name}/{sub_dir} 755 0 0")
+                for i in range(0, copy):
+                    lines.append(f"dir /spec{i}/{name}/{sub_dir} 755 0 0")
             for file in all_files:
-                lines.append(f"file /spec/{name}/{file} {path}/{file} 755 0 0")
+                for i in range(0, copy):
+                    lines.append(f"file /spec{i}/{name}/{file} {path}/{file} 755 0 0")
         else:
             print(f"unknown filename: {filename}")
 
     for i in range(0, int(copy)):
-        lines.append(f"file /spec/task{i}.sh "+ "${RISCV_ROOTFS_HOME}/rootfsimg/" + f"task{i}.sh 755 0 0")
+        lines.append(f"file /spec{i}/task{i}.sh "+ "${RISCV_ROOTFS_HOME}/rootfsimg/" + f"task{i}.sh 755 0 0")
 
     with open(os.path.join(dest_path, "initramfs-spec.txt"), "w", encoding="utf-8") as f:
         f.writelines(map(lambda x: x + "\n", lines))
@@ -3968,7 +3982,8 @@ def generate_run_sh(scripts_folder, elf_folder, spec, elf_suffix, dest_path, cop
     lines.append(f"echo '======== BEGIN {spec} ========'")
     lines.append("set -x")
     #lines.append("cat /dev/urandom | head -c 16 | busybox hexdump")
-    lines.append(f"md5sum /spec/{spec_bin}")
+    for i in range(0, copy):
+        lines.append(f"md5sum /spec{i}/{spec_bin}")
 
     output_redirect = (" ").join([">", "out.log", "2>", "err.log"]) if redirect_output else ""
 
@@ -3981,7 +3996,11 @@ def generate_run_sh(scripts_folder, elf_folder, spec, elf_suffix, dest_path, cop
         if withTrap:
             taskN.append("/spec_common/before_workload")
            
-        taskN.append(f'cd /spec && ./{spec_bin} {spec_cmd} {output_redirect} ')
+        if spec_bin == "perlbench":
+            taskN.append(f'cd /spec{i} && ./{spec_bin} {spec_cmd} {output_redirect} ')
+        else:
+            taskN.append(f'cd /spec{i} && ./{spec_bin} {spec_cmd} {output_redirect} ')
+
         taskN.append("date -R")
         if withTrap:
             if emu=="NEMU":
@@ -3994,7 +4013,7 @@ def generate_run_sh(scripts_folder, elf_folder, spec, elf_suffix, dest_path, cop
 #        else:
         backend_run = '&'
  
-        lines.append(f"/bin/busybox taskset -c {i} /spec/task{i}.sh {backend_run}")
+        lines.append(f"/bin/busybox taskset -c {i} /spec{i}/task{i}.sh {backend_run}")
         lines.append(f"PID{i}=$!")
         with open(os.path.join(dest_path, f"task{i}.sh"), "w", encoding="utf-8") as f:
             f.writelines(map(lambda x: x + "\n", taskN))
