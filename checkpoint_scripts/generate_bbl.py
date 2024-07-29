@@ -74,16 +74,17 @@ class Builder:
         err_log = os.path.join(build_log_folder, f"build-binary-with-{spec}-err.log")
 #["make", "clean"], 
         linux_commands = [["make", "-j70"]]
+        self.run_commands(linux_commands, self.env_vars["LINUX_HOME"], out_log, err_log)
+
         fw_payload_bin_size = os.path.getsize(f"{self.env_vars['LINUX_HOME']}/arch/riscv/boot/Image")
         fw_payload_fdt_addr = (((fw_payload_bin_size + 0x800000) + 0xfffff) // 0x100000) * 0x100000
         fw_payload_fdt_addr = fw_payload_fdt_addr + 0x80000000
-        print(f"SPEC: {spec}, file size: {fw_payload_bin_size}, fw_payload_fdt_addr: {fw_payload_fdt_addr}")
+        print(f"SPEC: {spec}, file size: {fw_payload_bin_size:X}, fw_payload_fdt_addr: {fw_payload_fdt_addr:X}")
         opensbi_commands = [
             ["rm", "-rf", "build"],
             ["make", "PLATFORM=generic", f"FW_PAYLOAD_PATH={self.env_vars['LINUX_HOME']}/arch/riscv/boot/Image", f"FW_FDT_PATH={self.env_vars['XIANGSHAN_FDT']}", "FW_PAYLOAD_OFFSET=0x700000", f"FW_PAYLOAD_FDT_ADDR={fw_payload_fdt_addr}", "-j10"]
         ]
 
-        self.run_commands(linux_commands, self.env_vars["LINUX_HOME"], out_log, err_log)
         self.run_commands(opensbi_commands, self.env_vars["OPENSBI_HOME"], out_log, err_log)
 
 #        fw_payload_bin_dst_path = os.path.join(spec_bin_folder, f"{spec}{bin_suffix}")
