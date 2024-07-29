@@ -206,9 +206,10 @@ def nemu_profiling_command(config):
         "-b",
         "--simpoint-profile",
         "--cpt-interval", config["utils"]["interval"],
-        "-r", config["NEMU"]["gcpt_restore"],
         "--checkpoint-format", config["utils"]["compile_format"]
     ]
+    if not config["all_in_one_workload"]:
+        command += ["-r", config["NEMU"]["gcpt_restore"]]
     return command
 
 def qemu_profiling_command(config):
@@ -266,9 +267,10 @@ def nemu_checkpoint_command(config, is_resume_from):
         "-b",
         "-S", simpoint_path,
         "--cpt-interval", config["utils"]["interval"],
-        "-r", config["NEMU"]["gcpt_restore"],
         "--checkpoint-format", config["utils"]["compile_format"]
     ]
+    if not config["all_in_one_workload"]:
+        command += ["-r", config["NEMU"]["gcpt_restore"]]
     return command
 
 def qemu_checkpoint_command(config, is_resume_from):
@@ -390,6 +392,7 @@ def generate_command(workload_folder,
                      mem_bind,
                      copies,
                      resume_after=None,
+                     all_in_one_workload=False,
                      profiling_func=profiling_func,
                      cluster_func=cluster_func,
                      checkpoint_func=checkpoint_func,
@@ -405,6 +408,7 @@ def generate_command(workload_folder,
     config["utils"]["log_folder"] = log_folder
     config["cpu_bind"] = cpu_bind
     config["mem_bind"] = mem_bind
+    config["all_in_one_workload"] = all_in_one_workload
 
     global profiling_roots
     if not os.path.exists("{}/{}{}".format(config["utils"]["workload_folder"],
