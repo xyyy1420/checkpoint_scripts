@@ -197,6 +197,8 @@ def main(config):
     generate_folders(base_config, archive_id_config)
 
     # if not set already exists archive id, script will generate benchmark assembly, generate rootfs, build bbl, and start checkpoint
+    workload_folder = build_config()["gcpt_bin_folder"] if base_config["all_in_one_workload"] else build_config()["bin_folder"]
+
     if base_config["archive_id"] is None:
         generate_specapp_assembly(spec_base_app_list, base_config["elf_folder"], base_config["max_threads"])
 
@@ -215,12 +217,11 @@ def main(config):
                 continue
 
             if base_config["emulator"] == "QEMU":
-                if base_config["bootloader"] == "opensbi":
-                    builder = Builder(env_vars_to_check=["LINUX_HOME", "OPENSBI_HOME", "XIANGSHAN_FDT", "GCPT_HOME"])
-                    builder.build_opensbi_payload(spec_app, build_config()["build_log"], build_config()["gcpt_bin_folder"], "", build_config()["gcpt_bin_folder"], "", build_config()["assembly_folder"], True)
-                else:
-                    builder = Builder(env_vars_to_check=["RISCV_PK_HOME", "GCPT_HOME"])
-                    builder.build_spec_bbl(spec_app, build_config()["build_log"], build_config()["gcpt_bin_folder"], "", build_config()["assembly_folder"], True)
+                assert base_config["all_in_one_workload"]
+
+            if base_config["bootloader"] == "opensbi":
+                builder = Builder(env_vars_to_check=["LINUX_HOME", "OPENSBI_HOME", "XIANGSHAN_FDT", "GCPT_HOME"])
+                builder.build_opensbi_payload(spec_app, build_config()["build_log"], build_config()["gcpt_bin_folder"], "", build_config()["gcpt_bin_folder"], "", build_config()["assembly_folder"], True)
             else:
                 builder = Builder(env_vars_to_check=["RISCV_PK_HOME", "GCPT_HOME"])
                 builder.build_spec_bbl(spec_app, build_config()["build_log"], build_config()["bin_folder"], "", build_config()["assembly_folder"], False)
@@ -229,7 +230,7 @@ def main(config):
                 continue
 
             root_noods = generate_command(
-                workload_folder=build_config()["gcpt_bin_folder"] if base_config["emulator"] == "QEMU" else build_config()["bin_folder"],
+                workload_folder=workload_folder,
                 workload=spec_app,
                 buffer=def_config()["buffer"],
                 bin_suffix="",
@@ -237,7 +238,8 @@ def main(config):
                 log_folder=os.path.join(def_config()["buffer"], "logs"),
                 cpu_bind=base_config["cpu_bind"],
                 mem_bind=base_config["mem_bind"],
-                copies=str(base_config["copies"]))
+                copies=str(base_config["copies"]),
+                all_in_one_workload=base_config["all_in_one_workload"],)
 
             spec_app_execute_list.append(root_noods)
 
@@ -259,7 +261,7 @@ def main(config):
         resume_after = base_config.get("resume_after", None)
         for spec_app in spec_app_list:
             root_noods = generate_command(
-                workload_folder=build_config()["gcpt_bin_folder"] if base_config["emulator"] == "QEMU" else build_config()["bin_folder"],
+                workload_folder=workload_folder,
                 workload=spec_app,
                 buffer=def_config()["buffer"],
                 bin_suffix="",
@@ -268,7 +270,8 @@ def main(config):
                 cpu_bind=base_config["cpu_bind"],
                 mem_bind=base_config["mem_bind"],
                 copies=str(base_config["copies"]),
-                resume_after=resume_after)
+                resume_after=resume_after,
+                all_in_one_workload=base_config["all_in_one_workload"],)
 
             #            list(map(print_tree, root_noods))
             spec_app_execute_list.append(root_noods)
