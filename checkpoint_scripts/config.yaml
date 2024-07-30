@@ -16,6 +16,7 @@ base_config:
   cpu_bind: 0
   mem_bind: 0
   bootloader: "opensbi"
+  all_in_one_workload: true
   flow:
     - create_folder: true
       copy_elfs: 
