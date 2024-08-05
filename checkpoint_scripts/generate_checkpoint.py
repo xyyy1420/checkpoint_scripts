@@ -6,13 +6,14 @@ import argparse
 import shutil
 import subprocess
 import concurrent.futures
+from concurrent.futures import Future
 import signal
-import yaml
-from spec_gen import prepare_rootfs
 from generate_bbl import Builder
-from take_checkpoint import set_startid_times
+from take_checkpoint import TakeCheckpointConfig
 from take_checkpoint import generate_command
 from take_checkpoint import level_first_exec
+from config import BaseConfig
+from typing import List, Tuple
 
 
 def entrys(path):
@@ -31,40 +32,48 @@ def dump_assembly(file_path, assembly_file):
                 ["riscv64-unknown-linux-gnu-objdump", "-d", file_path],
                 stdout=out, check=False)
             res.check_returncode()
+    return (assembly_file, 1)
 
-def copy_and_get_assembly(cp_src, elf, cp_dst, assembly_path):
+def copy_and_get_assembly(cp_src, elf, cp_dst) -> Tuple[str, str]:
     # copy
     if os.path.exists(os.path.join(cp_src, elf)):
         shutil.copy(os.path.join(cp_src, elf), os.path.join(cp_dst, elf))
         cp_dst_file_path = os.path.join(cp_dst, elf)
+        return (elf, cp_dst_file_path)
     else:
         print(os.path.join(cp_dst, elf), "Not found")
         exit(1)
- 
-    dump_assembly(
-        cp_dst_file_path,
-        os.path.join(assembly_path, elf + ".txt"))
 
 def generate_specapp_assembly(spec_base_app_list, elf_src_path, elf_dst_path, assembly_path, max_threads):
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_threads) as e:
-        list(map(lambda spec_app: e.submit(copy_and_get_assembly, elf_src_path, spec_app, elf_dst_path, assembly_path), spec_base_app_list))
+        submit_result: List[Future[Tuple[str, str]]] = [
+            e.submit(copy_and_get_assembly, elf_src_path, spec_app, elf_dst_path)
+            for spec_app in spec_base_app_list
+        ]
+        cp_dst_file_path_list: List[Tuple[str, str]] = [
+            future.result() for future in submit_result
+        ]
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max_threads) as e:
+        list(map(lambda item:
+            e.submit(dump_assembly, item[1], os.path.join(assembly_path, item[0] + ".txt")), cp_dst_file_path_list))
 
 def handle_keyboard_interrupt(signum, frame):
     print("Caught KeyboardInterrupt, shutting down...")
     raise KeyboardInterrupt
 
-class globalConfigCtx():
+class globalConfigCtx(BaseConfig):
     def __init__(self, config_path) -> None:
         # load user config
-        self.__user_config = self.__load_yaml(config_path)
+        self.__user_config = super().load_yaml(config_path)
         self.__base_config = self.__user_config["base_config"]
         self.__archive_id_config = self.__user_config["archive_id_config"]
 
         # load spec app info
         if self.__base_config["CPU2017"]:
-            self.__spec_app_info = self.__load_yaml("spec_info/spec17.json")
+            self.__spec_app_info = super().load_yaml("spec_info/spec17.json")
         else:
-            self.__spec_app_info = self.__load_yaml("spec_info/spec06.json")
+            self.__spec_app_info = super().load_yaml("spec_info/spec06.json")
 
         # parse app info in user config, list file has a higher priority
         if self.__base_config["spec_app_list"] is None and self.__base_config["spec_apps"] is None:
@@ -85,6 +94,7 @@ class globalConfigCtx():
         # generate buffer_path
         # if not set already exists archive id, script will create new archive id, and generate folder tree
         self.__buffer_path = os.path.join("archive", self.__base_config["archive_id"] if self.__base_config["archive_id"] is not None else self.__generate_buffer_folder_name())
+        self.__buffer_path = os.path.realpath(self.__buffer_path)
 
         # set global config
         self.global_config = {
@@ -107,6 +117,13 @@ class globalConfigCtx():
             }
         }
 
+        if self.__base_config["using_share_folder"]:
+            self.global_config["archive_buffer_layout"].update({
+                "linux": os.path.join(self.__buffer_path, "linux"),
+                "opensbi": os.path.join(self.__buffer_path, "opensbi"),
+                "rootfs": os.path.join(self.__buffer_path, "rootfs")
+            })
+
     def __generate_buffer_folder_name(self):
         """using compile and env info generate archive id"""
         base_config = self.__base_config
@@ -120,10 +137,6 @@ class globalConfigCtx():
 
         folder_name = f'{spec_20xx}_{archive_id_config["gcc_version"]}_{archive_id_config["riscv_ext"]}_{archive_id_config["base_or_fixed"]}_{archive_id_config["special_flag"]}_{base_config["emulator"]}_{archive_id_config["group"]}_{time}'
         return folder_name
-
-    def __load_yaml(self, yaml_path):
-        with open(yaml_path, 'r', encoding='utf-8') as file:
-            return yaml.safe_load(file)
 
     def get_global_config(self):
         return self.global_config
@@ -143,31 +156,33 @@ def main(config_ctx: globalConfigCtx):
 
     if base_config["archive_id"] is None:
         generate_buffer_folder(archive_buffer_layout)
+
     assert (os.path.exists(archive_buffer_layout["buffer_path"]))
 
     print(spec_base_app_list)
 
+    take_checkpoint_config_obj = TakeCheckpointConfig(path_env_vars_to_check=["NEMU_HOME", "QEMU_HOME"])
+
     # start id: start id is 0,0,0 means profiling-0 cluster-0-0 checkpoint-0-0-0
     # times 1,2,3 means once profiling, per profiling twice cluster, per cluster third times checkpoint
-    set_startid_times(base_config["start_id"], base_config["times"])
+    take_checkpoint_config_obj.set_startid_times(base_config["start_id"], base_config["times"])
+
+    take_checkpoint_config = take_checkpoint_config_obj.get_config()
 
     # if not set already exists archive id, script will generate benchmark assembly, generate rootfs, build bbl, and start checkpoint
-    workload_folder = archive_buffer_layout["gcpt_bins"] if base_config["emulator"] == "QEMU" else archive_buffer_layout["bin"],
+    workload_folder = archive_buffer_layout["gcpt_bins"] if base_config["emulator"] == "QEMU" else archive_buffer_layout["bin"]
 
     if base_config["archive_id"] is None:
         generate_specapp_assembly(spec_base_app_list, base_config["elf_folder"], archive_buffer_layout["elf"], archive_buffer_layout["assembly"], base_config["max_threads"])
 
+        if base_config["bootloader"] == "opensbi":
+            builder = Builder(archive_buffer_layout, global_config["spec_app_info"], path_env_vars_to_check=["LINUX_HOME", "OPENSBI_HOME", "XIANGSHAN_FDT", "GCPT_HOME", "RISCV_ROOTFS_HOME", "CPU2006_RUN_DIR", "CPU2017_RUN_DIR"], env_vars_to_check=["ARCH"])
+        else:
+            builder = Builder(archive_buffer_layout, global_config["spec_app_info"], path_env_vars_to_check=["RISCV_PK_HOME", "GCPT_HOME", "RISCV_ROOTFS_HOME", "CPU2006_RUN_DIR", "CPU2017_RUN_DIR"])
+
         spec_app_execute_list = []
         for spec_app in spec_app_list:
-            prepare_rootfs(scripts_folder=archive_buffer_layout["scripts"],
-                           elf_folder=archive_buffer_layout["elf"],
-                           spec_info=global_config["spec_app_info"],
-                           spec=spec_app,
-                           withTrap=True,
-                           copy=base_config["copies"],
-                           CPU2017=base_config["CPU2017"],
-                           redirect_output=base_config["redirect_output"],
-                           emu=base_config["emulator"])
+            builder.prepare_rootfs(spec_app, using_cpu2017=base_config["CPU2017"], copies=base_config["copies"], with_nemu_trap=True, redirect_output=base_config["redirect_output"], emu=base_config["emulator"])
 
             if base_config["generate_rootfs_script_only"]:
                 continue
@@ -176,10 +191,8 @@ def main(config_ctx: globalConfigCtx):
                 assert base_config["all_in_one_workload"]
 
             if base_config["bootloader"] == "opensbi":
-                builder = Builder(env_vars_to_check=["LINUX_HOME", "OPENSBI_HOME", "XIANGSHAN_FDT", "GCPT_HOME"])
-                builder.build_opensbi_payload(spec_app, archive_buffer_layout["logs_build"], archive_buffer_layout["gcpt_bins"], "", archive_buffer_layout["gcpt_bins"], "", archive_buffer_layout["assembly"], True)
+                builder.build_opensbi_payload(spec_app, "", "",  withGCPT=True, using_share_folder=base_config["using_share_folder"])
             else:
-                builder = Builder(env_vars_to_check=["RISCV_PK_HOME", "GCPT_HOME"])
                 builder.build_spec_bbl(spec_app, archive_buffer_layout["logs_build"], archive_buffer_layout["bin"], "", archive_buffer_layout["assembly"], False)
 
             if base_config["build_bbl_only"]:
@@ -190,6 +203,7 @@ def main(config_ctx: globalConfigCtx):
                 workload=spec_app,
                 buffer=archive_buffer_layout["buffer_path"],
                 bin_suffix="",
+                config = take_checkpoint_config,
                 emu=base_config["emulator"],
                 log_folder=archive_buffer_layout["logs"],
                 cpu_bind=base_config["cpu_bind"],
@@ -221,6 +235,7 @@ def main(config_ctx: globalConfigCtx):
                 workload=spec_app,
                 buffer=archive_buffer_layout["buffer_path"],
                 bin_suffix="",
+                config = take_checkpoint_config,
                 emu=base_config["emulator"],
                 log_folder=archive_buffer_layout["logs"],
                 cpu_bind=base_config["cpu_bind"],

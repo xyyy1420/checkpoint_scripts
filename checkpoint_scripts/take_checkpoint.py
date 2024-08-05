@@ -7,77 +7,113 @@ import random
 import concurrent.futures
 import subprocess
 from collections import deque
+from config import BaseConfig
 
+class TakeCheckpointConfig(BaseConfig):
+    def __init__(self, path_env_vars_to_check=["NEMU_HOME", "QEMU_HOME"], env_vars_to_check=None):
+        super().__init__(path_env_vars_to_check=path_env_vars_to_check, env_vars_to_check=env_vars_to_check)
 
-default_config = {
-    "NEMU": {
-        "NEMU_HOME":
-        os.environ.get("NEMU_HOME"),
-        "NEMU":
-        os.path.join(os.environ.get("NEMU_HOME"), "build",
-                     "riscv64-nemu-interpreter"),
-        "gcpt_restore_home":
-        os.path.join(os.environ.get("NEMU_HOME"), "resource", "gcpt_restore"),
-        "gcpt_restore":
-        os.path.join(os.environ.get("NEMU_HOME"), "resource", "gcpt_restore",
-                     "build", "gcpt.bin"),
-        "simpoint":
-        os.path.join(os.environ.get("NEMU_HOME"), "resource", "simpoint",
-                     "simpoint_repo", "bin", "simpoint"),
-    },
-    "QEMU": {
-        "QEMU_HOME":
-        os.environ.get("QEMU_HOME"),
-        "QEMU":
-        os.path.join(os.environ.get("QEMU_HOME"), "build",
-                     "qemu-system-riscv64"),
-        "memory":
-        "8G",
-        "smp":
-        "1",
-        "profiling_plugin":
-        os.path.join(os.environ.get("QEMU_HOME"), "build", "contrib", "plugins",
-                     "libprofiling.so"),
-    },
-    "utils": {
-        "workload_folder": "",
-        "compile_format": "zstd",
-        "interval": "20000000",
-        "workload": "",
-        "buffer": "",
-        "bin_suffix": "",
-        "log_folder": ""
-    },
-    "profiling": {
-        "basename": "profiling",
-        "id": "0",
-        "times": "1",
-        "config": ""
-    },
-    "cluster": {
-        "basename": "cluster",
-        "id": "0",
-        "times": "1",
-        "config": ""
-    },
-    "checkpoint": {
-        "basename": "checkpoint",
-        "id": "0",
-        "times": "1",
-        "config": "",
-    },
-    "command": [],
-    "emu": "",
-    "out-log:": "",
-    "err-log": "",
-    "execute_mode": "",
-    "cpu_bind": "",
-    "mem_bind": ""
-}
+        if "NEMU_HOME" in path_env_vars_to_check:
+            self.config.update(
+                **{
+                    "NEMU": {
+                          "NEMU": f"{self.path_env_vars['NEMU_HOME']}/build/riscv64-nemu-interpreter",
+                          "NEMU_HOME": f"{self.path_env_vars['NEMU_HOME']}",
+                          "gcpt_restore": f"{self.path_env_vars['NEMU_HOME']}/resource/gcpt_restore/build/gcpt.bin",
+                          "gcpt_restore_home": f"{self.path_env_vars['NEMU_HOME']}/resource/gcpt_restore",
+                          "simpoint": f"{self.path_env_vars['NEMU_HOME']}/resource/simpoint/simpoint_repo/bin/simpoint"
+                    }
+                }
+            )
 
+        if "QEMU_HOME" in path_env_vars_to_check:
+            self.config.update(
+                **{
+                    "QEMU": {
+                      "QEMU": f"{self.path_env_vars['QEMU_HOME']}/build/qemu-system-riscv64",
+                      "QEMU_HOME": f"{self.path_env_vars['QEMU_HOME']}",
+                      "memory": "8G",
+                      "profiling_plugin": f"{self.path_env_vars['QEMU_HOME']}/build/contrib/plugins/libprofiling.so",
+                      "smp": '1'
+                    }
+                }
+            )
 
-def get_config():
-    return default_config
+        self.config.update(
+            **{
+                "utils": {
+                    "workload_folder": "",
+                    "compile_format": "zstd",
+                    "interval": "20000000",
+                    "workload": "",
+                    "buffer": "",
+                    "bin_suffix": "",
+                    "log_folder": ""
+                },
+                "profiling": {
+                    "basename": "profiling",
+                    "id": "0",
+                    "times": "1",
+                    "config": ""
+                },
+                "cluster": {
+                    "basename": "cluster",
+                    "id": "0",
+                    "times": "1",
+                    "config": ""
+                },
+                "checkpoint": {
+                    "basename": "checkpoint",
+                    "id": "0",
+                    "times": "1",
+                    "config": "",
+                },
+                "command": [],
+                "emu": "",
+                "out-log:": "",
+                "err-log": "",
+                "execute_mode": "",
+                "cpu_bind": "",
+                "mem_bind": ""
+            })
+
+    def set_startid_times(self, start_id, times):
+        if start_id is not None:
+            self.config["profiling"]["id"] = start_id.split(",")[0]
+            self.config["cluster"]["id"] = start_id.split(",")[1]
+            self.config["checkpoint"]["id"] = start_id.split(",")[2]
+
+        if times is not None:
+            self.config["profiling"]["times"] = times.split(",")[0]
+            self.config["cluster"]["times"] = times.split(",")[1]
+            self.config["checkpoint"]["times"] = times.split(",")[2]
+
+        profiling_configs = list(
+        itertools.product(
+            range(int(self.config["profiling"]["id"]),
+                  int(self.config["profiling"]["times"]))))
+
+        cluster_configs = list(
+        itertools.product(
+            range(int(self.config["profiling"]["id"]),
+                  int(self.config["profiling"]["times"])),
+            range(int(self.config["cluster"]["id"]),
+                  int(self.config["cluster"]["times"]))))
+
+        checkpoint_configs = list(
+        itertools.product(
+            range(int(self.config["profiling"]["id"]),
+                  int(self.config["profiling"]["times"])),
+            range(int(self.config["cluster"]["id"]),
+                  int(self.config["cluster"]["times"])),
+            range(int(self.config["checkpoint"]["id"]),
+                  int(self.config["checkpoint"]["times"]))))
+
+        self.config.update(**{
+            "profiling_configs": profiling_configs,
+            "cluster_configs": cluster_configs,
+            "checkpoint_configs": checkpoint_configs,
+        })
 
 
 def mkdir(path):
@@ -174,25 +210,6 @@ def level_first_exec(root):
         print("---- Level Execute finish ----")
 
 
-profiling_configs = list(
-    itertools.product(
-        range(int(get_config()["profiling"]["id"]),
-              int(get_config()["profiling"]["times"]))))
-cluster_configs = list(
-    itertools.product(
-        range(int(get_config()["profiling"]["id"]),
-              int(get_config()["profiling"]["times"])),
-        range(int(get_config()["cluster"]["id"]),
-              int(get_config()["cluster"]["times"]))))
-checkpoint_configs = list(
-    itertools.product(
-        range(int(get_config()["profiling"]["id"]),
-              int(get_config()["profiling"]["times"])),
-        range(int(get_config()["cluster"]["id"]),
-              int(get_config()["cluster"]["times"])),
-        range(int(get_config()["checkpoint"]["id"]),
-              int(get_config()["checkpoint"]["times"]))))
-
 profiling_roots = CheckpointTree(None)
 
 def nemu_profiling_command(config):
@@ -286,12 +303,6 @@ def qemu_checkpoint_command(config, is_resume_from):
         "-m", config["QEMU"]["memory"],
         "-smp", config["QEMU"]["smp"],
         "-cpu", "rv64,v=true,vlen=128,h=false,sv39=true,sv48=false,sv57=false,sv64=false",
-#        "-simpoint-path", os.path.join(config["utils"]["buffer"], config["cluster"]["config"]),
-#        "-workload", config["utils"]["workload"],
-#        "-cpt-interval", config["utils"]["interval"],
-#        "-output-base-dir", config["utils"]["buffer"],
-#        "-config-name", config["checkpoint"]["config"],
-#        "-checkpoint-mode", "SimpointCheckpoint"
     ]
     return command
 
@@ -391,12 +402,13 @@ def generate_command(workload_folder,
                      cpu_bind,
                      mem_bind,
                      copies,
+                     config,
                      resume_after=None,
                      all_in_one_workload=False,
                      profiling_func=profiling_func,
                      cluster_func=cluster_func,
                      checkpoint_func=checkpoint_func,
-                     config=default_config):
+                     ):
 
     config["utils"]["workload_folder"] = workload_folder
     config["utils"]["workload"] = workload
@@ -411,10 +423,11 @@ def generate_command(workload_folder,
     config["all_in_one_workload"] = all_in_one_workload
 
     global profiling_roots
-    if not os.path.exists("{}/{}{}".format(config["utils"]["workload_folder"],
-                                           config["utils"]["workload"],
-                                           config["utils"]["bin_suffix"])):
-        print("Workload binary not exists: {}", config["utils"]["workload"])
+    if not os.path.exists(
+            os.path.join(
+                config["utils"]["workload_folder"],
+                f"{config['utils']['workload']}{config['utils']['bin_suffix']}"
+            )):
         profiling_roots = None
         return profiling_roots
 
@@ -432,23 +445,11 @@ def generate_command(workload_folder,
         cl_func = functools.partial(cluster_func, config=config, dry_run=True)
         c_func = functools.partial(checkpoint_func, config=config, is_resume_from=True)
 
-    print(list(itertools.starmap(p_func, profiling_configs)))
-    print(list(itertools.starmap(cl_func, cluster_configs)))
-    print(list(itertools.starmap(c_func, checkpoint_configs)))
+    print(list(itertools.starmap(p_func, config["profiling_configs"])))
+    print(list(itertools.starmap(cl_func, config["cluster_configs"])))
+    print(list(itertools.starmap(c_func, config["checkpoint_configs"])))
 
     return profiling_roots
-
-def set_startid_times(start_id, times):
-    if start_id is not None:
-        default_config["profiling"]["id"] = start_id.split(",")[0]
-        default_config["cluster"]["id"] = start_id.split(",")[1]
-        default_config["checkpoint"]["id"] = start_id.split(",")[2]
-
-    if times is not None:
-        default_config["profiling"]["times"] = times.split(",")[0]
-        default_config["cluster"]["times"] = times.split(",")[1]
-        default_config["checkpoint"]["times"] = times.split(",")[2]
-
 
 #generate_command("gcc_test", "astar_biglakes", "archive", "", "NEMU", "log_folder")
 #print_tree(profiling_roots[0])

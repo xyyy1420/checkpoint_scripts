@@ -1,0 +1,16 @@
+NEMU:
+  NEMU: /nfs/home/jiaxiaoyu/profiling_env/profiling_qemu_env/nemu_rv64gc_checkpoint/build/riscv64-nemu-interpreter
+  NEMU_HOME: /nfs/home/jiaxiaoyu/profiling_env/profiling_qemu_env/nemu_rv64gc_checkpoint
+  gcpt_restore: /nfs/home/jiaxiaoyu/profiling_env/profiling_qemu_env/nemu_rv64gc_checkpoint/resource/gcpt_restore/build/gcpt.bin
+  gcpt_restore_home: /nfs/home/jiaxiaoyu/profiling_env/profiling_qemu_env/nemu_rv64gc_checkpoint/resource/gcpt_restore
+  simpoint: /nfs/home/jiaxiaoyu/profiling_env/profiling_qemu_env/nemu_rv64gc_checkpoint/resource/simpoint/simpoint_repo/bin/simpoint
+QEMU:
+  QEMU: /nfs/home/jiaxiaoyu/profiling_env/profiling_qemu_env/qemu/build/qemu-system-riscv64
+  QEMU_HOME: /nfs/home/jiaxiaoyu/profiling_env/profiling_qemu_env/qemu
+  memory: 8G
+  profiling_plugin: /nfs/home/jiaxiaoyu/profiling_env/profiling_qemu_env/qemu/build/contrib/plugins/libprofiling.so
+  smp: '1'
+OpenSBI:
+  OpenSBI: /nfs/home/jiaxiaoyu/profiling_env/profiling_qemu_env/opensbi
+Libcheckpoint:
+  Libcheckpoint: /nfs/home/jiaxiaoyu/profiling_env/profiling_qemu_env/LibCheckpoint
