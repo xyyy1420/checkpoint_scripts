@@ -141,13 +141,12 @@ class globalConfigCtx(BaseConfig):
             }
         }
 
-        if self.__base_config["using_share_folder"]:
-            self.global_config["archive_buffer_layout"].update({
-                "linux": os.path.join(self.__buffer_path, "build", "linux"),
-                "opensbi": os.path.join(self.__buffer_path, "build", "opensbi"),
-                "rootfs": os.path.join(self.__buffer_path, "build", "rootfs"),
-                "gcpt": os.path.join(self.__buffer_path, "build", "gcpt")
-            })
+        self.global_config["archive_buffer_layout"].update({
+            "linux": os.path.join(self.__buffer_path, "build", "linux"),
+            "opensbi": os.path.join(self.__buffer_path, "build", "opensbi"),
+            "rootfs": os.path.join(self.__buffer_path, "build", "rootfs"),
+            "gcpt": os.path.join(self.__buffer_path, "build", "gcpt")
+        })
 
     def __generate_buffer_folder_name(self):
         """using compile and env info generate archive id"""
