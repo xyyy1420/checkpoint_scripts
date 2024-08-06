@@ -327,8 +327,6 @@ def profiling_func(profiling_id, config, dry_run=False):
         profiling_config["backup_commands"] = [['cp', profiling_config["out-log"], bak_out_log_path], ['cp', profiling_config["err-log"], bak_err_log_path]]
         profiling_config["command"] = ["echo", '"dry_run_profiling_command"']
 
-    print(profiling_config["command"])
-
     global profiling_roots
     profiling_roots = CheckpointTree(profiling_config)
 

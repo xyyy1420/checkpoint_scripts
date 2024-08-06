@@ -18,6 +18,7 @@ base_config:
   bootloader: "opensbi"
   all_in_one_workload: true
   using_share_folder: true
+  boot_for_test: true
 archive_id_config:
   gcc_version: "gcc12.2.0"
   riscv_ext: "rv64gcb"
