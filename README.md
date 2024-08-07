@@ -67,7 +67,12 @@ export QEMU_HOME=/path/to/qemu
 ### 单核检查点
 
 - 修改环境变量
-    - `export XIANGSHAN_FDT=/path/to/workload_build_env/dts/build/xiangshan.dtb`
+    - 公共服务器
+        - `export XIANGSHAN_FDT=/nfs/home/share/workload_env/workload_build_env/dts/build/xiangshan.dtb`
+        - `export GCPT_HOME=/nfs/home/share/workload_env/LibCheckpointAlpha`
+    - 私有环境
+        - `export XIANGSHAN_FDT=/path/to/workload_build_env/dts/build/xiangshan.dtb`
+        - `export GCPT_HOME=/path/to/LibCheckpointAlpha`
 - 修改下述配置文件
     - 修改字段 `copies` 为 1
 
@@ -76,6 +81,7 @@ export QEMU_HOME=/path/to/qemu
 
 ### 使用说明
 - 克隆这个仓库[https://github.com/xyyy1420/checkpoint_scripts.git](https://github.com/xyyy1420/checkpoint_scripts.git) 到任意目录
+- 进入 checkpoint_scripts 目录
 - 参数说明
 
 ```
@@ -123,3 +129,8 @@ archive_id_config: # 配置生成的 archive id，仅影响结果放置在哪里
 python3 generate_checkpoint.py --config config.yaml
 ```
 - 本脚本目前仅维护使用opensbi的环境
+
+- Reference
+    - https://github.com/OpenXiangShan/riscv-rootfs/blob/master/rootfsimg/spec_gen.py
+        - checkpoint_scripts/spec_info/spec06.json 和 checkpoint_scripts/spec_info/spec17.json 是通过该仓库的脚本修改而来
+        - checkpoint_scripts/generate_bbl.py 中的 default_initramfs_file，prepare_rootfs，traverse_path，__generate_initramfs，__generate_run_scripts 都是取自该仓库的脚本
