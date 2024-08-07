@@ -318,7 +318,7 @@ class RootfsBuilder(BaseConfig):
 
         self.kernel_list.append((spec, f"{archive_buffer_layout['binary_archive']}/{spec}{bin_suffix}.Image"))
 
-    def build_opensbi(self, spec, bin_suffix):
+    def build_opensbi(self, copies, spec, bin_suffix):
         archive_buffer_layout = self.config["archive_buffer_layout"]
 
         OPENSBI_HOME = self.path_env_vars.get("OPENSBI_HOME")
@@ -345,9 +345,13 @@ class RootfsBuilder(BaseConfig):
         if os.path.exists(f"{archive_buffer_layout['opensbi']}/build"):
             shared_opensbi_command.append(["rm", "-rf", f"{archive_buffer_layout['opensbi']}/build"])
 
+        if copies == 1:
+            fw_payload_offset = 0x100000
+        else:
+            fw_payload_offset = 0x700000
+
         shared_opensbi_command.append(
-            ["make", "-C", OPENSBI_HOME, f"O={archive_buffer_layout['opensbi']}/build", "PLATFORM=generic", f"FW_PAYLOAD_PATH={fw_payload_bin}", f"FW_FDT_PATH={XIANGSHAN_FDT}", "FW_PAYLOAD_OFFSET=0x700000", f"FW_PAYLOAD_FDT_ADDR={fw_payload_fdt_addr}", "-j10"]
-        )
+            ["make", "-C", OPENSBI_HOME, f"O={archive_buffer_layout['opensbi']}/build", "PLATFORM=generic", f"FW_PAYLOAD_PATH={fw_payload_bin}", f"FW_FDT_PATH={XIANGSHAN_FDT}", f"FW_PAYLOAD_OFFSET={fw_payload_offset}", f"FW_PAYLOAD_FDT_ADDR={fw_payload_fdt_addr}", "-j10"])
 
         self.run_commands(shared_opensbi_command, None, out_log, err_log)
         self.copy(archive_buffer_layout["opensbi"], spec, bin_suffix, [
@@ -356,7 +360,7 @@ class RootfsBuilder(BaseConfig):
 
         self.opensbi_fw_payload.append((spec, f"{archive_buffer_layout['binary_archive']}/{spec}{bin_suffix}.fw_payload.bin"))
 
-    def build_gcpt(self, spec, gcpt_bin_suffix):
+    def build_gcpt(self, copies, spec, gcpt_bin_suffix):
         archive_buffer_layout = self.config["archive_buffer_layout"]
 
         GCPT_HOME = self.path_env_vars.get("GCPT_HOME")
@@ -372,9 +376,12 @@ class RootfsBuilder(BaseConfig):
         _, fw_payload_path = self.opensbi_fw_payload.pop()
         print(fw_payload_path)
 
-        shared_gcpt_commands = [
-            ["make", "-C", GCPT_HOME, f"O={archive_buffer_layout['gcpt']}", "clean"],
-            ["make", "-C", GCPT_HOME, f"O={archive_buffer_layout['gcpt']}", f'GCPT_PAYLOAD_PATH={fw_payload_path}', "USING_QEMU_DUAL_CORE_SYSTEM=1"]]
+        shared_gcpt_commands = []
+        shared_gcpt_commands.append(["make", "-C", GCPT_HOME, f"O={archive_buffer_layout['gcpt']}", "clean"])
+        if copies == 1:
+            shared_gcpt_commands.append(["make", "-C", GCPT_HOME, f"O={archive_buffer_layout['gcpt']}", f'GCPT_PAYLOAD_PATH={fw_payload_path}'])
+        else:
+            shared_gcpt_commands.append(["make", "-C", GCPT_HOME, f"O={archive_buffer_layout['gcpt']}", f'GCPT_PAYLOAD_PATH={fw_payload_path}', "USING_QEMU_DUAL_CORE_SYSTEM=1"])
 
         if not isinstance(archive_buffer_layout["gcpt_bins"], str):
             raise ValueError(f"The 'gcpt_bins' key in bbl generate config must be a string and must exist.")
@@ -405,15 +412,15 @@ class RootfsBuilder(BaseConfig):
             except subprocess.TimeoutExpired:
                 pass
 
-    def build_opensbi_payload(self, spec, bin_suffix = "", gcpt_bin_suffix = "", withGCPT = False):
+    def build_opensbi_payload(self, spec, copies, bin_suffix = "", gcpt_bin_suffix = "", withGCPT = False):
 
         print(f"build {spec}-opensbi-linux-spec...{' with GCPT' if withGCPT else ''}")
 
         self.build_linux_kernel(spec, bin_suffix)
-        self.build_opensbi(spec, bin_suffix)
+        self.build_opensbi(spec=spec, copies=copies, bin_suffix=bin_suffix)
 
         if withGCPT:
-            self.build_gcpt(spec, gcpt_bin_suffix)
+            self.build_gcpt(spec=spec, copies=copies, gcpt_bin_suffix=gcpt_bin_suffix)
 
     @staticmethod
     def copy(src_base_path, spec, suffix, files: List[Tuple[str, str, str]]):

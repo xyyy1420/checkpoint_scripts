@@ -74,9 +74,10 @@ def handle_keyboard_interrupt(signum, frame):
     raise KeyboardInterrupt
 
 
-class globalConfigCtx(BaseConfig):
+class GlobalConfigCtx(BaseConfig):
 
     def __init__(self, config_path) -> None:
+        super().__init__()
         # load user config
         self.__user_config = super().load_yaml(config_path)
         self.__base_config = self.__user_config["base_config"]
@@ -120,7 +121,7 @@ class globalConfigCtx(BaseConfig):
         self.__buffer_path = os.path.realpath(self.__buffer_path)
 
         # set global config
-        self.global_config = {
+        self.config.update(**{
             "user_config": self.__user_config,
             "base_config": self.__base_config,
             "archive_id_config": self.__archive_id_config,
@@ -139,9 +140,9 @@ class globalConfigCtx(BaseConfig):
                 "assembly": os.path.join(self.__buffer_path, "assembly"),
                 "binary_archive": os.path.join(self.__buffer_path, "binary_archive")
             }
-        }
+        })
 
-        self.global_config["archive_buffer_layout"].update({
+        self.config["archive_buffer_layout"].update(**{
             "linux": os.path.join(self.__buffer_path, "build", "linux"),
             "opensbi": os.path.join(self.__buffer_path, "build", "opensbi"),
             "rootfs": os.path.join(self.__buffer_path, "build", "rootfs"),
@@ -162,19 +163,14 @@ class globalConfigCtx(BaseConfig):
         folder_name = f'{spec_20xx}_{archive_id_config["gcc_version"]}_{archive_id_config["riscv_ext"]}_{archive_id_config["base_or_fixed"]}_{archive_id_config["special_flag"]}_{base_config["emulator"]}_{archive_id_config["group"]}_{time}'
         return folder_name
 
-    def get_global_config(self):
-        return self.global_config
-
-
 def generate_buffer_folder(archive_buffer_layout):
     """create prepare and build folder"""
     for value in archive_buffer_layout.values():
         if not pathlib.Path(value).exists():
             os.makedirs(value)
 
-
-def main(config_ctx: globalConfigCtx):
-    global_config = config_ctx.get_global_config()
+def main(config_ctx: GlobalConfigCtx):
+    global_config = config_ctx.get_config()
     base_config = global_config["base_config"]
     spec_app_list = global_config["app_list"]
     spec_base_app_list = global_config["base_app_list"]
@@ -187,13 +183,10 @@ def main(config_ctx: globalConfigCtx):
 
     print(spec_base_app_list)
 
-    take_checkpoint_config_obj = TakeCheckpointConfig(
-        path_env_vars_to_check=["NEMU_HOME", "QEMU_HOME"])
-
     # start id: start id is 0,0,0 means profiling-0 cluster-0-0 checkpoint-0-0-0
     # times 1,2,3 means once profiling, per profiling twice cluster, per cluster third times checkpoint
-    take_checkpoint_config_obj.set_startid_times(base_config["start_id"],
-                                                 base_config["times"])
+    take_checkpoint_config_obj = TakeCheckpointConfig(start_id=base_config["start_id"], times=base_config["times"],
+        path_env_vars_to_check=["NEMU_HOME", "QEMU_HOME"])
 
     # get take checkpoint config
     take_checkpoint_config = take_checkpoint_config_obj.get_config()
@@ -250,6 +243,7 @@ def main(config_ctx: globalConfigCtx):
             if base_config["bootloader"] == "opensbi":
                 builder.build_opensbi_payload(
                     spec_app,
+                    base_config["copies"],
                     withGCPT=True)
             else:
                 builder.build_spec_bbl(spec_app,
@@ -349,6 +343,6 @@ if __name__ == "__main__":
         parser.print_usage()
         sys.exit(1)
 
-    config_ctx = globalConfigCtx(args.config)
+    config_ctx = GlobalConfigCtx(args.config)
 
     main(config_ctx)

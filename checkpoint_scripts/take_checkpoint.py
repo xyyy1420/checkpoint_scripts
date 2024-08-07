@@ -10,7 +10,7 @@ from collections import deque
 from config import BaseConfig
 
 class TakeCheckpointConfig(BaseConfig):
-    def __init__(self, path_env_vars_to_check=["NEMU_HOME", "QEMU_HOME"], env_vars_to_check=None):
+    def __init__(self, start_id, times, path_env_vars_to_check=["NEMU_HOME", "QEMU_HOME"], env_vars_to_check=None):
         super().__init__(path_env_vars_to_check=path_env_vars_to_check, env_vars_to_check=env_vars_to_check)
 
         if "NEMU_HOME" in path_env_vars_to_check:
@@ -77,7 +77,9 @@ class TakeCheckpointConfig(BaseConfig):
                 "mem_bind": ""
             })
 
-    def set_startid_times(self, start_id, times):
+        self.__set_startid_times(start_id, times)
+
+    def __set_startid_times(self, start_id, times):
         if start_id is not None:
             self.config["profiling"]["id"] = start_id.split(",")[0]
             self.config["cluster"]["id"] = start_id.split(",")[1]
