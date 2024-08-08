@@ -9,10 +9,10 @@ source /nfs/home/share/workload_env/env.sh
 ### 无法访问公共服务器
 - 预先准备好 riscv64 工具链，可能用到的 prefix 有`riscv64-linux-gnu-`，`riscv64-unknown-linux-gnu-`，`riscv64-unknown-elf-`，需要的 gcc 版本最低应该是 14.0.0
 
-- 克隆或下载 OpenSBI，Linux，workload_build_env，NEMU，QEMU，LibCheckpoint，LibCheckpointAlpha，riscv-rootfs
+- 克隆或下载 OpenSBI，Linux，nemu_board，NEMU，QEMU，LibCheckpoint，LibCheckpointAlpha，riscv-rootfs
     - https://github.com/riscv-software-src/opensbi.git
     - https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-6.10.3.tar.xz
-    - https://github.com/xyyy1420/workload_build_env.git
+    - https://github.com/OpenXiangShan/nemu_board.git
     - https://github.com/OpenXiangShan/NEMU.git
     - https://github.com/OpenXiangShan/qemu.git checkpoint分支
     - https://github.com/OpenXiangShan/LibCheckpoint.git
@@ -21,10 +21,10 @@ source /nfs/home/share/workload_env/env.sh
 
 - 准备 Linux kernel
     - 解压缩内核 `tar -xf linux-6.10.3.tar.xz`
-    - 复制配置文件 `cp /path/to/workload_build_env/config/xiangshan_defconfig /path/to/linux/arch/riscv/config/`
+    - 复制配置文件 `cp /path/to/nemu_board/config/xiangshan_defconfig /path/to/linux/arch/riscv/config/`
     - 在 Linux kernel 目录下调整配置文件并保存为默认配置文件 `make menuconfig; make savedefconfig; mv defconfig arch/riscv/config/xiangshan_defconfig`
 - 准备设备树
-    - 构建单核多核设备树 `cd /path/to/workload_build_env/dts && ./build_dual_core_for_qemu.sh && ./build_single_core_for_nemu.sh`
+    - 构建单核多核设备树 `cd /path/to/nemu_board/dts && ./build_dual_core_for_qemu.sh && ./build_single_core_for_nemu.sh`
 
 - 构建 NEMU
     - 进入 NEMU 目录
@@ -59,7 +59,7 @@ source /nfs/home/share/workload_env/env.sh
 export ARCH=riscv
 export LINUX_HOME=/path/to/linux
 export OPENSBI_HOME=/path/to/opensbi
-export XIANGSHAN_FDT=/path/to/workload_build_env/dts/build/xiangshan_dualcore.dtb
+export XIANGSHAN_FDT=/path/to/nemu_board/dts/build/xiangshan_dualcore.dtb
 export RISCV=/path/to/riscv-toolchain
 export RISCV_ROOTFS_HOME=/path/to/riscv-rootfs
 export CPU2006_RUN_DIR=/path/to/cpu2006_run_dir
@@ -77,7 +77,7 @@ export QEMU_HOME=/path/to/qemu
         - `export XIANGSHAN_FDT=/nfs/home/share/workload_env/workload_build_env/dts/build/xiangshan.dtb`
         - `export GCPT_HOME=/nfs/home/share/workload_env/LibCheckpointAlpha`
     - 私有环境
-        - `export XIANGSHAN_FDT=/path/to/workload_build_env/dts/build/xiangshan.dtb`
+        - `export XIANGSHAN_FDT=/path/to/nemu_board/dts/build/xiangshan.dtb`
         - `export GCPT_HOME=/path/to/LibCheckpointAlpha`
 - 修改下述配置文件
     - 修改字段 `copies` 为 1
