@@ -146,11 +146,14 @@ class CheckpointTree:
 
             with open(out_file, "w", encoding="utf-8") as out, open(err_file, "w", encoding="utf-8") as err:
                 command = self.value["command"]
-                print((command))
+#                print((command))
                 print(self.value["utils"]["workload"], self.value["execute_mode"])
-                res = subprocess.run(command, stdout=out, stderr=err, check=False)
-                print(command + "Execute finish")
-                return res
+                proc = subprocess.Popen(command, stdout=out, stderr=err)
+                proc.wait()
+
+                print(self.value["utils"]["workload"], self.value["execute_mode"], "Execute finish")
+#                print(command + "Execute finish")
+                return proc.returncode
         except subprocess.CalledProcessError as e:
             print(f"Command '{e.cmd}' returned non-zero exit status {e.returncode}")
             with open(err_file, "a", encoding="utf-8") as err:
@@ -201,13 +204,7 @@ def level_first_exec(root):
             for child in node.children:
                 queue.append(child)
         with concurrent.futures.ProcessPoolExecutor() as e:
-#                futures = {e.submit(task.execute):task for task in execute_list}
                 list(map(lambda x: e.submit(x.execute), execute_list))
-#            except KeyboardInterrupt:
-#                for future in futures:
-#                    future.cancel()
-#                e.shutdown(wait=False)
-        print("---- Level Execute finish ----")
 
 
 profiling_roots = CheckpointTree(None)

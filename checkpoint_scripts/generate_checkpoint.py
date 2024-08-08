@@ -1,4 +1,3 @@
-from collections import deque
 import os
 import sys
 import pathlib
@@ -8,7 +7,6 @@ import shutil
 import subprocess
 import concurrent.futures
 from concurrent.futures import Future
-import signal
 from generate_bbl import RootfsBuilder
 from take_checkpoint import TakeCheckpointConfig
 from take_checkpoint import generate_command
@@ -265,9 +263,9 @@ def main(config_ctx: GlobalConfigCtx):
 
         if spec_app_execute_list is not []:
             with concurrent.futures.ProcessPoolExecutor(
-                    max_workers=base_config["max_threads"]) as e:
+                max_workers=base_config["max_threads"]) as e:
 #                futures = [e.submit(level_first_exec, task) for task in spec_app_execute_list]
-                    e.map(level_first_exec, spec_app_execute_list)
+                e.map(level_first_exec, spec_app_execute_list)
 
     # if set already exists archive id, will start checkpoint immidiatly, but archive must have valid binary file
     else:
