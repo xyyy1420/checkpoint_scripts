@@ -201,14 +201,12 @@ def level_first_exec(root):
             for child in node.children:
                 queue.append(child)
         with concurrent.futures.ProcessPoolExecutor() as e:
-            futures = []
-            try:
-                futures = {e.submit(task.execute):task for task in execute_list}
-#                list(map(lambda x: e.submit(x.execute), execute_list))
-            except KeyboardInterrupt:
-                for future in futures:
-                    future.cancel()
-                e.shutdown(wait=False)
+#                futures = {e.submit(task.execute):task for task in execute_list}
+                list(map(lambda x: e.submit(x.execute), execute_list))
+#            except KeyboardInterrupt:
+#                for future in futures:
+#                    future.cancel()
+#                e.shutdown(wait=False)
         print("---- Level Execute finish ----")
 
 

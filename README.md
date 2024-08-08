@@ -41,6 +41,12 @@ source /nfs/home/share/workload_env/env.sh
 - 准备 riscv-rootfs
     - 进入 riscv-rootfs 目录
     - 构建 riscv-rootfs app `make install`
+    - 进入 riscv-rootfs/rootfsimg 目录，修改 `inittab-spec`
+    ```
+    -/dev/console::sysinit:-/bin/sh /spec/run.sh
+    +/dev/console::sysinit:-/bin/sh /spec0/run.sh
+    ```
+
 
 - 准备运行时所需文件的目录
     - 提前运行一遍 SPEC2006 和 SPEC2017 （根据自己需要可以仅运行其中一个）
@@ -128,6 +134,10 @@ archive_id_config: # 配置生成的 archive id，仅影响结果放置在哪里
 ```
 python3 generate_checkpoint.py --config config.yaml
 ```
+- 导出 checkpoint list 和权重文件
+    - 修改 dump_result.py 文件中的 spec_list，base_path
+    - 运行该脚本，随后会在 checkpoint 目录下生成 list 文件和 权重文件
+
 - 本脚本目前仅维护使用opensbi的环境
 
 - Reference

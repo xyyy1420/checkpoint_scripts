@@ -68,12 +68,6 @@ def generate_specapp_assembly(spec_base_app_list, elf_src_path, elf_dst_path,
                     os.path.join(assembly_path, item[0] + ".txt")),
                 cp_dst_file_path_list))
 
-
-def handle_keyboard_interrupt(signum, frame):
-    print("Caught KeyboardInterrupt, shutting down...")
-    raise KeyboardInterrupt
-
-
 class GlobalConfigCtx(BaseConfig):
 
     def __init__(self, config_path) -> None:
@@ -191,10 +185,6 @@ def main(config_ctx: GlobalConfigCtx):
     # get take checkpoint config
     take_checkpoint_config = take_checkpoint_config_obj.get_config()
 
-    # get workload folder
-    workload_folder = archive_buffer_layout["gcpt_bins"] if base_config[
-        "emulator"] == "QEMU" else archive_buffer_layout["bin"]
-
     # create rootfs builder
     if base_config["bootloader"] == "opensbi":
         builder = RootfsBuilder(archive_buffer_layout,
@@ -241,10 +231,9 @@ def main(config_ctx: GlobalConfigCtx):
                 assert base_config["all_in_one_workload"]
 
             if base_config["bootloader"] == "opensbi":
-                builder.build_opensbi_payload(
-                    spec_app,
-                    base_config["copies"],
-                    withGCPT=True)
+                builder.build_opensbi_payload(spec_app,
+                                              base_config["copies"],
+                                              withGCPT=True)
             else:
                 builder.build_spec_bbl(spec_app,
                                        archive_buffer_layout["logs_build"],
@@ -253,13 +242,13 @@ def main(config_ctx: GlobalConfigCtx):
                                        False)
 
             if base_config["boot_for_test"]:
-                builder.boot_test(base_config["copies"])
+                builder.boot_test(base_config["copies"], base_config["emulator"])
 
             if base_config["build_bbl_only"]:
                 continue
 
             root_noods = generate_command(
-                workload_folder=workload_folder,
+                workload_folder=archive_buffer_layout["gcpt_bins"],
                 workload=spec_app,
                 buffer=archive_buffer_layout["buffer_path"],
                 bin_suffix="",
@@ -277,18 +266,8 @@ def main(config_ctx: GlobalConfigCtx):
         if spec_app_execute_list is not []:
             with concurrent.futures.ProcessPoolExecutor(
                     max_workers=base_config["max_threads"]) as e:
-                futures = []
-                try:
-                    futures = {
-                        e.submit(level_first_exec, task): task
-                        for task in spec_app_execute_list
-                    }
-#                    e.map(level_first_exec, spec_app_execute_list)
-                except KeyboardInterrupt:
-                    for future in futures:
-                        future.cancel()
-                    e.shutdown(wait=False)
-            #        generate_result(def_config()["buffer"], os.path.join(def_config()["buffer"], "logs"))
+#                futures = [e.submit(level_first_exec, task) for task in spec_app_execute_list]
+                    e.map(level_first_exec, spec_app_execute_list)
 
     # if set already exists archive id, will start checkpoint immidiatly, but archive must have valid binary file
     else:
@@ -296,7 +275,7 @@ def main(config_ctx: GlobalConfigCtx):
         resume_after = base_config.get("resume_after", None)
         for spec_app in spec_app_list:
             root_noods = generate_command(
-                workload_folder=workload_folder,
+                workload_folder=archive_buffer_layout["gcpt_bins"],
                 workload=spec_app,
                 buffer=archive_buffer_layout["buffer_path"],
                 bin_suffix="",
@@ -315,22 +294,9 @@ def main(config_ctx: GlobalConfigCtx):
 
         with concurrent.futures.ProcessPoolExecutor(
                 max_workers=base_config["max_threads"]) as e:
-            futures = []
-            try:
-                futures = {
-                    e.submit(level_first_exec, task): task
-                    for task in spec_app_execute_list
-                }
-
-
-#                e.map(level_first_exec, spec_app_execute_list)
-            except KeyboardInterrupt:
-                for future in futures:
-                    future.cancel()
-                e.shutdown(wait=False)
+                e.map(level_first_exec, spec_app_execute_list)
 
 if __name__ == "__main__":
-    signal.signal(signal.SIGINT, handle_keyboard_interrupt)
     parser = argparse.ArgumentParser(
         description="Auto profiling and checkpointing")
     parser.add_argument(

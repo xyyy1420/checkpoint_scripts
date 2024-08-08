@@ -335,7 +335,6 @@ class RootfsBuilder(BaseConfig):
         err_log = os.path.join(archive_buffer_layout["logs_build"], f"build-opensbi-with-{spec}-err.log")
 
         _, fw_payload_bin = self.kernel_list.pop()
-        print(fw_payload_bin)
         fw_payload_bin_size = os.path.getsize(fw_payload_bin)
         fw_payload_fdt_addr = (((fw_payload_bin_size + 0x800000) + 0xfffff) // 0x100000) * 0x100000
         fw_payload_fdt_addr = fw_payload_fdt_addr + 0x80000000
@@ -374,7 +373,6 @@ class RootfsBuilder(BaseConfig):
         err_log = os.path.join(archive_buffer_layout["logs_build"], f"build-gcpt-with-{spec}-err.log")
 
         _, fw_payload_path = self.opensbi_fw_payload.pop()
-        print(fw_payload_path)
 
         shared_gcpt_commands = []
         shared_gcpt_commands.append(["make", "-C", GCPT_HOME, f"O={archive_buffer_layout['gcpt']}", "clean"])
@@ -397,15 +395,24 @@ class RootfsBuilder(BaseConfig):
 
         self.gcpt_bin_list.append((spec, f"{archive_buffer_layout['gcpt_bins']}/{spec}{gcpt_bin_suffix}"))
 
-    def boot_test(self, copies):
+    def boot_test(self, copies, emu):
         QEMU_HOME = self.path_env_vars.get("QEMU_HOME")
+        NEMU_HOME = self.path_env_vars.get("NEMU_HOME")
         if not QEMU_HOME:
-            raise EnvironmentError("Environment variable GCPT_HOME is not set or not initialized.")
+            raise EnvironmentError("Environment variable QEMU_HOME is not set or not initialized.")
+        if not NEMU_HOME:
+            raise EnvironmentError("Environment variable NEMU_HOME is not set or not initialized.")
 
         while self.gcpt_bin_list:
             _, gcpt_bin = self.gcpt_bin_list.pop()
-            print(gcpt_bin)
-            command = [f"{QEMU_HOME}/build/qemu-system-riscv64", "-bios", gcpt_bin, "-nographic", "-m", "8G", f"-smp", f"{copies}", "-cpu", "rv64,v=true,vlen=128,sv39=true,sv48=false,sv57=false,sv64=false", "-M", "nemu"]
+
+            nemu_command = [f"{NEMU_HOME}/build/riscv64-nemu-interpreter", "-b", gcpt_bin]
+            qemu_command = [f"{QEMU_HOME}/build/qemu-system-riscv64", "-bios", gcpt_bin, "-nographic", "-m", "8G", f"-smp", f"{copies}", "-cpu", "rv64,v=true,vlen=128,sv39=true,sv48=false,sv57=false,sv64=false", "-M", "nemu"]
+
+            if emu == "NEMU":
+                command = nemu_command
+            else:
+                command = qemu_command
 
             try:
                 subprocess.run(command, timeout=60)
