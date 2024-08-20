@@ -173,6 +173,7 @@ class RootfsBuilder(BaseConfig):
             lines.append(f"md5sum /spec{i}/{spec_bin}")
 
         output_redirect = (" ").join([">", "out.log", "2>", "err.log"]) if redirect_output else ""
+        force_output_redirect = (" ").join([">", "out.log", "2>", "err.log"])
 
         taskN = []
         for i in range(0, int(copies)):
@@ -183,8 +184,8 @@ class RootfsBuilder(BaseConfig):
             if with_nemu_trap:
                 taskN.append("/spec_common/before_workload")
 
-            if spec_bin == "perlbench":
-                taskN.append(f'cd /spec{i} && ./{spec_bin} {spec_cmd} {output_redirect} ')
+            if spec_bin in ['xalancbmk']:
+                taskN.append(f'cd /spec{i} && ./{spec_bin} {spec_cmd} {force_output_redirect} ')
             else:
                 taskN.append(f'cd /spec{i} && ./{spec_bin} {spec_cmd} {output_redirect} ')
 
