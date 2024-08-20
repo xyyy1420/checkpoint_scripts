@@ -37,8 +37,14 @@ def profiling_instrs(profiling_log, spec_app, using_new_script=False):
 
     if using_new_script:
         path = new_path
-    else:
+        assert os.path.exists(new_path)
+    elif os.path.exists(old_path):
         path = old_path
+    elif os.path.exists(new_path):
+        path = new_path
+    else:
+        print("Either {} or {} does not exist".format(old_path, new_path))
+        raise
 
     with open(path, "r", encoding="utf-8") as f:
         for i in f.readlines():
@@ -64,7 +70,8 @@ def cluster_weight(cluster_path, spec_app):
     with open(simpoints_path, "r") as f:
         for line in f.readlines():
             a, b = line.split()
-            points.update({a: weights.get(b)})
+            if float(weights[b]) > 1e-4:  # ignore small simpoints
+                points.update({a: weights.get(b)})
 
     return points
 
