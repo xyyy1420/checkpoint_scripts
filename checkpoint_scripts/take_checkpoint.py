@@ -250,7 +250,10 @@ def cluster_command(config, is_resume_from):
     seedproj = random.randint(100000, 999999)
     mkdir(os.path.split(os.path.join(config["utils"]["buffer"], config["cluster"]["config"], config["utils"]["workload"], "simpoints0"))[0])
     bbv_path = os.path.join(config["utils"]["buffer"], config["profiling"]["config"], config["utils"]["workload"], "simpoint_bbv.gz")
-    maxK = 100 if config["utils"]["workload"] in ['xalancbmk'] else 30
+    if config["utils"]["workload"] in ['xalancbmk']:
+        maxK = 100
+    else:
+        maxK = 30
     if is_resume_from:
         # make sure bbv.gz has been generated
         assert os.path.exists(bbv_path)
