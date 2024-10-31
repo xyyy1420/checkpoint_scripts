@@ -88,9 +88,10 @@ def per_checkpoint_generate_json(profiling_log, cluster_path, app_list,
         })
     with open(os.path.join(target_path), "w") as f:
         f.write(json.dumps(result, indent=4))
+    return result
 
 
-def per_checkpoint_generate_worklist(cpt_path, target_path):
+def per_checkpoint_generate_worklist(cpt_path, target_path, json_result):
     cpt_path = cpt_path + "/"
     checkpoints = []
     for item in os.scandir(cpt_path):
@@ -105,6 +106,10 @@ def per_checkpoint_generate_worklist(cpt_path, target_path):
     with open(target_path, "w") as f:
         for i in checkpoint_dirs:
             path = i.replace(cpt_path, "")
+            workload, point = path.split("/")
+            if point not in json_result[workload]["points"]:
+                print(f"point {point} not in {workload} because of small weight or not in simpoint list")
+                continue
             name = path.replace('/', "_", 1)
             print("{} {} 0 0 20 20".format(name, path), file=f)
 
@@ -165,10 +170,10 @@ def dump_result(base_path, spec_app_list, times, ids):
     result_list = generate_result_list(base_path, times, ids)
 
     for result in result_list:
-        per_checkpoint_generate_json(result["profiling_log"], result["cl_res"],
+        json_result = per_checkpoint_generate_json(result["profiling_log"], result["cl_res"],
                                      spec_app_list, result["json_path"])
         per_checkpoint_generate_worklist(result["checkpoint_path"],
-                                         result["list_path"])
+                                         result["list_path"], json_result)
 
 
 #/nfs/home/share/jiaxiaoyu/simpoint_checkpoint_archive/spec06_rv64gcbv_20m_gcc14.1.0_libquantum_hmmer_h264_without_segment/checkpoint-0-0-0/h264ref_sss
