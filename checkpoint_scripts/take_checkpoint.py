@@ -45,6 +45,7 @@ class TakeCheckpointConfig(BaseConfig):
                     "workload_folder": "",
                     "compile_format": "zstd",
                     "interval": "20000000",
+                    "sync-interval": "20000",
                     "workload": "",
                     "buffer": "",
                     "bin_suffix": "",
@@ -299,7 +300,7 @@ def qemu_checkpoint_command(config, is_resume_from):
         # "numactl","--cpunodebind={}".format(config["cpu_bind"]),"--membind={}".format(config["mem_bind"]),
         config["QEMU"]["QEMU"],
         "-bios", "{}/{}{}".format(config["utils"]["workload_folder"], config["utils"]["workload"], config["utils"]["bin_suffix"]),
-        "-M", f'nemu,simpoint-path={simpoint_path},workload={config["utils"]["workload"]},cpt-interval={config["utils"]["interval"]},output-base-dir={config["utils"]["buffer"]},config-name={config["checkpoint"]["config"]},checkpoint-mode={"SimpointCheckpoint"}',
+        "-M", f'nemu,simpoint-path={simpoint_path},workload={config["utils"]["workload"]},cpt-interval={config["utils"]["interval"]},sync-interval={config["utils"]["interval"]},output-base-dir={config["utils"]["buffer"]},config-name={config["checkpoint"]["config"]},checkpoint-mode={"SimpointCheckpoint"}',
         "-nographic",
         "-m", config["QEMU"]["memory"],
         "-smp", config["QEMU"]["smp"],
@@ -345,8 +346,8 @@ def cluster_func(profiling_id, cluster_id, config, is_resume_from=False, dry_run
 
     cluster_config["execute_mode"] = "cluster"
 
-    cluster_config["out-log"] = os.path.join(config["utils"]["log_folder"], "cluster-{}-{}".format(profiling_id, cluster_id), config["utils"]["workload"],"cluster.out.log")
-    cluster_config["err-log"] = os.path.join(config["utils"]["log_folder"], "cluster-{}-{}".format(profiling_id, cluster_id), config["utils"]["workload"],"cluster.err.log")
+    cluster_config["out-log"] = os.path.join(config["utils"]["log_folder"], "cluster-{}-{}".format(profiling_id, cluster_id), config["utils"]["workload"], "cluster.out.log")
+    cluster_config["err-log"] = os.path.join(config["utils"]["log_folder"], "cluster-{}-{}".format(profiling_id, cluster_id), config["utils"]["workload"], "cluster.err.log")
 
     if not dry_run:
         cluster_config["command"] = cluster_command(cluster_config, is_resume_from=is_resume_from)

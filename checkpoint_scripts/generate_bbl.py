@@ -6,6 +6,7 @@ import subprocess
 import shutil
 from config import BaseConfig
 from typing import Tuple, List
+from find_dynamic_lib import get_libraries_str
 import subprocess
 
 class RootfsBuilder(BaseConfig):
@@ -40,13 +41,6 @@ class RootfsBuilder(BaseConfig):
                     "dir /root 755 0 0", "dir /var/log 755 0 0", "",
                     "nod /dev/console 644 0 0 c 5 1", "nod /dev/null 644 0 0 c 1 3", "",
                     "nod /dev/urandom 644 0 0 c 1 9", "nod /dev/random 644 0 0 c 1 8",
-                    "# libraries",
-                    "file /lib/ld-linux-riscv64-lp64d.so.1 ${RISCV}/sysroot/lib/ld-linux-riscv64-lp64d.so.1 755 0 0",
-                    "file /lib/libc.so.6 ${RISCV}/sysroot/lib/libc.so.6 755 0 0",
-                    "file /lib/libresolv.so.2 ${RISCV}/sysroot/lib/libresolv.so.2 755 0 0",
-                    "file /lib/libm.so.6 ${RISCV}/sysroot/lib/libm.so.6 755 0 0",
-                    "file /lib/libdl.so.2 ${RISCV}/sysroot/lib/libdl.so.2 755 0 0",
-                    "file /lib/libpthread.so.0 ${RISCV}/sysroot/lib/libpthread.so.0 755 0 0",
                     "", "# busybox",
                     "file /bin/busybox ${RISCV_ROOTFS_HOME}/rootfsimg/build/busybox 755 0 0",
                     "file /etc/inittab ${RISCV_ROOTFS_HOME}/rootfsimg/inittab-spec 755 0 0",
@@ -64,9 +58,9 @@ class RootfsBuilder(BaseConfig):
             }
         )
 
-    def prepare_rootfs(self, spec, using_cpu2017, copies, with_nemu_trap, redirect_output, emu):
+    def prepare_rootfs(self, spec, using_cpu2017, using_jemalloc, copies, with_nemu_trap, redirect_output, emu):
         archive_buffer_layout = self.config["archive_buffer_layout"]
-        self.__generate_initramfs(archive_buffer_layout["scripts"], archive_buffer_layout["elf"], spec, os.path.join(self.config["path_env_vars"]["RISCV_ROOTFS_HOME"], "rootfsimg"), using_cpu2017, copies)
+        self.__generate_initramfs(archive_buffer_layout["scripts"], archive_buffer_layout["elf"], spec, os.path.join(self.config["path_env_vars"]["RISCV_ROOTFS_HOME"], "rootfsimg"), using_cpu2017, using_jemalloc, copies)
         self.__generate_run_scripts(spec, copies, redirect_output, using_cpu2017, with_nemu_trap, os.path.join(self.config["path_env_vars"]["RISCV_ROOTFS_HOME"], "rootfsimg"), archive_buffer_layout["scripts"], emu)
 
 
@@ -87,10 +81,12 @@ class RootfsBuilder(BaseConfig):
 
 
 # original func is: https://github.com/OpenXiangShan/riscv-rootfs/blob/c61a659b454e5b038b5374a9091b29ad4995f13f/rootfsimg/spec_gen.py#L558
-    def __generate_initramfs(self, scripts_archive_folder, elf_folder, spec, dest_path, using_cpu2017=False, copies=1):
+    def __generate_initramfs(self, scripts_archive_folder, elf_folder, spec, dest_path, using_cpu2017=False, using_jemalloc=True, copies=1):
         spec_config = self.config["spec_info"]
 
         lines = self.config["default_initramfs_file"].copy()
+        lines += ["# libraries"]
+        lines += get_libraries_str(self.config["path_env_vars"]["RISCV"], using_jemalloc)
         if not isinstance(lines, list):
             raise ValueError("lines not a list type value")
 
@@ -167,6 +163,8 @@ class RootfsBuilder(BaseConfig):
 
         lines.append(f"echo '===== Start running {SPEC_20XX} ====='")
         lines.append(f"echo '======== BEGIN {spec} ========'")
+        lines.append("export LD_LIBRARY_PATH=/lib:$LD_LIBRARY_PATH")
+        lines.append("head -c 10 /dev/random | hexdump")
         lines.append("set -x")
 
         for i in range(0, copies):

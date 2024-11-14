@@ -191,7 +191,8 @@ def main(config_ctx: GlobalConfigCtx):
                                     "LINUX_HOME", "OPENSBI_HOME",
                                     "XIANGSHAN_FDT", "GCPT_HOME",
                                     "RISCV_ROOTFS_HOME", "CPU2006_RUN_DIR",
-                                    "CPU2017_RUN_DIR", "QEMU_HOME", "NEMU_HOME"
+                                    "CPU2017_RUN_DIR", "QEMU_HOME", "NEMU_HOME",
+                                    "RISCV"
                                 ],
                                 env_vars_to_check=["ARCH"])
     else:
@@ -200,7 +201,7 @@ def main(config_ctx: GlobalConfigCtx):
                                 path_env_vars_to_check=[
                                     "RISCV_PK_HOME", "GCPT_HOME",
                                     "RISCV_ROOTFS_HOME", "CPU2006_RUN_DIR",
-                                    "CPU2017_RUN_DIR"
+                                    "CPU2017_RUN_DIR", "RISCV"
                                 ])
 
     # if not set already exists archive id, script will generate benchmark assembly, generate rootfs, build bbl, and start checkpoint
@@ -217,6 +218,7 @@ def main(config_ctx: GlobalConfigCtx):
             builder.prepare_rootfs(
                 spec_app,
                 using_cpu2017=base_config["CPU2017"],
+                using_jemalloc=base_config["using_jemalloc"],
                 copies=base_config["copies"],
                 with_nemu_trap=True,
                 redirect_output=base_config["redirect_output"],
