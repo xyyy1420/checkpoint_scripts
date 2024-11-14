@@ -173,6 +173,9 @@ class RootfsBuilder(BaseConfig):
         output_redirect = (" ").join([">", "out.log", "2>", "err.log"]) if redirect_output else ""
         force_output_redirect = (" ").join([">", "out.log", "2>", "err.log"])
 
+        output_redirect_workload_list_cpu2006 = ['xalancbmk']
+        output_redirect_workload_list_cpu2017 = ['perlbench', "povray", "xalancbmk", "leela"]
+
         taskN = []
         for i in range(0, int(copies)):
             taskN.append("#!/bin/sh")
@@ -182,14 +185,20 @@ class RootfsBuilder(BaseConfig):
             if with_nemu_trap:
                 taskN.append("/spec_common/before_workload")
 
-            if spec_bin in ['xalancbmk']:
-                taskN.append(f'cd /spec{i} && ./{spec_bin} {spec_cmd} {force_output_redirect} ')
+            if using_cpu2017:
+                if spec_bin in output_redirect_workload_list_cpu2017:
+                    taskN.append(f'cd /spec{i} && ./{spec_bin} {spec_cmd} {force_output_redirect} ')
+                else:
+                    taskN.append(f'cd /spec{i} && ./{spec_bin} {spec_cmd} {output_redirect} ')
             else:
-                taskN.append(f'cd /spec{i} && ./{spec_bin} {spec_cmd} {output_redirect} ')
+                if spec_bin in output_redirect_workload_list_cpu2006:
+                    taskN.append(f'cd /spec{i} && ./{spec_bin} {spec_cmd} {force_output_redirect} ')
+                else:
+                    taskN.append(f'cd /spec{i} && ./{spec_bin} {spec_cmd} {output_redirect} ')
 
             taskN.append("date -R")
             if with_nemu_trap:
-                if emu=="NEMU":
+                if emu == "NEMU":
                     taskN.append("/spec_common/trap")
                 else:
                     taskN.append("/spec_common/qemu_trap")
