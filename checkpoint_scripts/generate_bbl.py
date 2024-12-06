@@ -425,7 +425,6 @@ class RootfsBuilder(BaseConfig):
         lines.append("/bin/mount -a")
         lines.append("mkdir -p /dev")
         lines.append("/bin/mount -t devtmpfs devtmpfs /dev")
-        lines.append("insmod apps/kvm.ko")
 
         lines.append(f'/apps/lkvm-static run -m {guest_memory} -c{guest_cpus} --console serial -p "earlycon=sbi" -k /apps/guest_Image --debug')
         with open(os.path.join(scripts_archive_folder, "{}_rcS-spec.txt".format(spec)), "w", encoding="utf-8") as f:
