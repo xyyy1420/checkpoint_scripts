@@ -17,7 +17,8 @@ base_config:
   mem_bind: 0
   bootloader: "opensbi"
   all_in_one_workload: true
-  boot_for_test: true
+  boot_for_test: false
+  enable_h_ext: false
 archive_id_config:
   gcc_version: "gcc12.2.0"
   riscv_ext: "rv64gcb"
