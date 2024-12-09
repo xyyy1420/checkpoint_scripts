@@ -564,6 +564,7 @@ class RootfsBuilder(BaseConfig):
             taskN.append("#!/bin/sh")
             taskN.append("set -x")
             taskN.append(f"echo '===== Start running TASK{i} ====='")
+            taskN.append("ulimit -s unlimited")
             taskN.append("date -R")
             if with_nemu_trap:
                 taskN.append("/spec_common/before_workload")
