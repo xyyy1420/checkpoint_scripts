@@ -176,10 +176,9 @@ def dump_result(base_path, spec_app_list, times, ids):
                                          result["list_path"], json_result)
 
 
-#/nfs/home/share/jiaxiaoyu/simpoint_checkpoint_archive/spec06_rv64gcbv_20m_gcc14.1.0_libquantum_hmmer_h264_without_segment/checkpoint-0-0-0/h264ref_sss
-spec_list=["hmmer_nph3", "hmmer_retro", "libquantum", "h264ref_foreman.baseline", "h264ref_foreman.main", "h264ref_sss"]
-#base_path = "/nfs/home/share/jiaxiaoyu/simpoint_checkpoint_archive/spec17-rv64gcb-O3-20m-gcc12.2.0-mix-with-special_wrf"
-base_path = "/nfs/home/share/jiaxiaoyu/simpoint_checkpoint_archive/spec06_rv64gcbv_20m_gcc14.1.0_libquantum_hmmer_h264_without_segment"
+with open("./spec_info/spec06_int.lst", "r") as f:
+    spec_list = f.read().splitlines()
+base_path = "/your/spec_checkpoint_top"
 times = [1, 1, 1]
 ids = [0, 0, 0]
 
