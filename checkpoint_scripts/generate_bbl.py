@@ -424,6 +424,7 @@ class RootfsBuilder(BaseConfig):
         lines.append("set -x")
         lines.append("/bin/mount -a")
         lines.append("mkdir -p /dev")
+        lines.append("insmod /apps/kvm.ko")
         lines.append("/bin/mount -t devtmpfs devtmpfs /dev")
 
         lines.append(f'/apps/lkvm-static run -m {guest_memory} -c{guest_cpus} --console serial -p "earlycon=sbi" -k /apps/guest_Image --debug')
@@ -455,7 +456,8 @@ class RootfsBuilder(BaseConfig):
 
     def __generate_host_initramfs_files(self, guest_Image_path):
         host_initramfs_files = [
-            "file /apps/lkvm-static ${RISCV_ROOTFS_HOME}/apps/lkvm-static 755 0 0",
+            "file /apps/lkvm-static ${RISCV_ROOTFS_HOME}/rootfsimg/build/lkvm-static 755 0 0",
+            "file /apps/kvm.ko ${RISCV_ROOTFS_HOME}/rootfsimg/kvm.ko 755 0 0",
             f"file /apps/guest_Image {guest_Image_path} 755 0 0"
         ]
         return host_initramfs_files
@@ -673,7 +675,7 @@ class RootfsBuilder(BaseConfig):
         ]
 
         self.run_commands(prepare_linux_config, None, out_log, err_log)
-        config_file = os.path.join(archive_buffer_layout['linux'], ".config")
+        config_file = os.path.join(archive_buffer_layout['host_linux'], ".config")
         _, initramfs_file_path = self.host_initramfs_list.pop()
 
         try:
@@ -697,7 +699,7 @@ class RootfsBuilder(BaseConfig):
         if not isinstance(archive_buffer_layout["binary_archive"], str):
             raise ValueError("binary_archive value is not str")
 
-        self.copy(archive_buffer_layout['linux'], spec, bin_suffix, [
+        self.copy(archive_buffer_layout['host_linux'], spec, bin_suffix, [
             ("arch/riscv/boot/Image", "._hostImage", archive_buffer_layout["binary_archive"]),
         ])
 
