@@ -136,6 +136,7 @@ class GlobalConfigCtx(BaseConfig):
 
         self.config["archive_buffer_layout"].update(**{
             "linux": os.path.join(self.__buffer_path, "build", "linux"),
+            "host_linux": os.path.join(self.__buffer_path, "build", "host_linux"),
             "opensbi": os.path.join(self.__buffer_path, "build", "opensbi"),
             "rootfs": os.path.join(self.__buffer_path, "build", "rootfs"),
             "gcpt": os.path.join(self.__buffer_path, "build", "gcpt")
@@ -233,6 +234,7 @@ def main(config_ctx: GlobalConfigCtx):
             if base_config["bootloader"] == "opensbi":
                 builder.build_opensbi_payload(spec_app,
                                               base_config["copies"],
+                                              base_config["enable_h_ext"],
                                               withGCPT=True)
             else:
                 builder.build_spec_bbl(spec_app,
