@@ -487,13 +487,13 @@ class RootfsBuilder(BaseConfig):
 
         lines.append(f"file /spec0/run.sh {scripts_archive_folder}/{spec}_run.sh 755 0 0")
 
-        for i in range(0, copies):
+        for i in range(0, 1):
             elf_file_abspath = os.path.realpath(f"{elf_folder}/{spec_config[spec]['base_name']}")
             lines.append(f"file /spec{i}/{spec_config[spec]['base_name']} {elf_file_abspath} 755 0 0")
 
         for i, filename in enumerate(spec_files):
             if len(filename.split()) == 1:
-                for j in range(0, copies):
+                for j in range(0, 1):
                     target_filename = f"file /spec{j}/{filename.split('/')[-1]} {cpu20xx_run_dir}/{filename} 755 0 0"
                     lines.append(target_filename)
 
@@ -506,13 +506,13 @@ class RootfsBuilder(BaseConfig):
 
                 all_dirs, all_files = self.traverse_path(f"{cpu20xx_run_dir}{path}")
 
-                for i in range(0, copies):
+                for i in range(0, 1):
                     lines.append(f"dir /spec{i}/{name} 755 0 0")
                 for sub_dir in all_dirs:
-                    for i in range(0, copies):
+                    for i in range(0, 1):
                         lines.append(f"dir /spec{i}/{name}/{sub_dir} 755 0 0")
                 for file in all_files:
-                    for i in range(0, copies):
+                    for i in range(0, 1):
                         lines.append(f"file /spec{i}/{name}/{file} {cpu20xx_run_dir}{path}/{file} 755 0 0")
             else:
                 print(f"unknown filename: {filename}")
@@ -552,7 +552,7 @@ class RootfsBuilder(BaseConfig):
         lines.append("head -c 10 /dev/random | hexdump")
         lines.append("set -x")
 
-        for i in range(0, copies):
+        for i in range(0, 1):
             lines.append(f"md5sum /spec{i}/{spec_bin}")
 
         output_redirect = (" ").join([">", "out.log", "2>", "err.log"]) if redirect_output else ""
@@ -573,14 +573,14 @@ class RootfsBuilder(BaseConfig):
 
             if using_cpu2017:
                 if spec_bin in output_redirect_workload_list_cpu2017:
-                    taskN.append(f'cd /spec{i} && ./{spec_bin} {spec_cmd} {force_output_redirect} ')
+                    taskN.append(f'cd /spec{0} && ./{spec_bin} {spec_cmd} {force_output_redirect} ')
                 else:
-                    taskN.append(f'cd /spec{i} && ./{spec_bin} {spec_cmd} {output_redirect} ')
+                    taskN.append(f'cd /spec{0} && ./{spec_bin} {spec_cmd} {output_redirect} ')
             else:
                 if spec_bin in output_redirect_workload_list_cpu2006:
-                    taskN.append(f'cd /spec{i} && ./{spec_bin} {spec_cmd} {force_output_redirect} ')
+                    taskN.append(f'cd /spec{0} && ./{spec_bin} {spec_cmd} {force_output_redirect} ')
                 else:
-                    taskN.append(f'cd /spec{i} && ./{spec_bin} {spec_cmd} {output_redirect} ')
+                    taskN.append(f'cd /spec{0} && ./{spec_bin} {spec_cmd} {output_redirect} ')
 
             taskN.append("date -R")
             if with_nemu_trap:
@@ -785,7 +785,7 @@ class RootfsBuilder(BaseConfig):
 
         _, fw_payload_bin = self.kernel_list.pop()
         fw_payload_bin_size = os.path.getsize(fw_payload_bin)
-        fw_payload_fdt_addr = (((fw_payload_bin_size + 0x800000) + 0xfffff) // 0x100000) * 0x100000
+        fw_payload_fdt_addr = (((fw_payload_bin_size + 0x1800000) + 0xfffff) // 0x100000) * 0x100000
         fw_payload_fdt_addr = fw_payload_fdt_addr + 0x80000000
         print(f"SPEC: {spec}, file size: {fw_payload_bin_size:X}, fw_payload_fdt_addr: {fw_payload_fdt_addr:X}")
 
@@ -796,7 +796,7 @@ class RootfsBuilder(BaseConfig):
         if copies == 1:
             fw_payload_offset = 0x100000
         else:
-            fw_payload_offset = 0x700000
+            fw_payload_offset = 0x1700000
 
         shared_opensbi_command.append(
             ["make", "-C", OPENSBI_HOME, f"O={archive_buffer_layout['opensbi']}/build", "PLATFORM=generic", f"FW_PAYLOAD_PATH={fw_payload_bin}", f"FW_FDT_PATH={XIANGSHAN_FDT}", f"FW_PAYLOAD_OFFSET={fw_payload_offset}", f"FW_PAYLOAD_FDT_ADDR={fw_payload_fdt_addr}", "-j10"])
