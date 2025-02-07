@@ -6,6 +6,7 @@ import subprocess
 import shutil
 from config import BaseConfig
 from typing import Tuple, List
+from find_dynamic_lib import get_libraries_str
 import subprocess
 
 class RootfsBuilder(BaseConfig):
@@ -43,13 +44,6 @@ class RootfsBuilder(BaseConfig):
                     "dir /root 755 0 0", "dir /var/log 755 0 0", "",
                     "nod /dev/console 644 0 0 c 5 1", "nod /dev/null 644 0 0 c 1 3", "",
                     "nod /dev/urandom 644 0 0 c 1 9", "nod /dev/random 644 0 0 c 1 8",
-                    "# libraries",
-                    "file /lib/ld-linux-riscv64-lp64d.so.1 ${RISCV}/sysroot/lib/ld-linux-riscv64-lp64d.so.1 755 0 0",
-                    "file /lib/libc.so.6 ${RISCV}/sysroot/lib/libc.so.6 755 0 0",
-                    "file /lib/libresolv.so.2 ${RISCV}/sysroot/lib/libresolv.so.2 755 0 0",
-                    "file /lib/libm.so.6 ${RISCV}/sysroot/lib/libm.so.6 755 0 0",
-                    "file /lib/libdl.so.2 ${RISCV}/sysroot/lib/libdl.so.2 755 0 0",
-                    "file /lib/libpthread.so.0 ${RISCV}/sysroot/lib/libpthread.so.0 755 0 0",
                     "", "# busybox",
                     "file /bin/busybox ${RISCV_ROOTFS_HOME}/rootfsimg/build/busybox 755 0 0",
                     "file /etc/inittab ${RISCV_ROOTFS_HOME}/rootfsimg/inittab-spec 755 0 0",
@@ -418,6 +412,7 @@ class RootfsBuilder(BaseConfig):
             }
         )
 
+
     def prepare_rcS(self, guest_memory, guest_cpus, spec, scripts_archive_folder):
         lines = []
         lines.append("#! /bin/sh")
@@ -431,10 +426,10 @@ class RootfsBuilder(BaseConfig):
             f.writelines(map(lambda x: x + "\n", lines))
 
         self.rcs_list.append((spec, os.path.join(scripts_archive_folder, f"{spec}_rcS-spec.txt")))
-
-    def prepare_rootfs(self, spec, using_cpu2017, copies, with_nemu_trap, redirect_output, emu):
+        
+    def prepare_rootfs(self, spec, using_cpu2017, using_jemalloc, copies, with_nemu_trap, redirect_output, emu):
         archive_buffer_layout = self.config["archive_buffer_layout"]
-        self.__generate_initramfs(archive_buffer_layout["scripts"], archive_buffer_layout["elf"], spec, os.path.join(self.config["path_env_vars"]["RISCV_ROOTFS_HOME"], "rootfsimg"), using_cpu2017, copies)
+        self.__generate_initramfs(archive_buffer_layout["scripts"], archive_buffer_layout["elf"], spec, os.path.join(self.config["path_env_vars"]["RISCV_ROOTFS_HOME"], "rootfsimg"), using_cpu2017, using_jemalloc, copies)
         self.__generate_run_scripts(spec, copies, redirect_output, using_cpu2017, with_nemu_trap, os.path.join(self.config["path_env_vars"]["RISCV_ROOTFS_HOME"], "rootfsimg"), archive_buffer_layout["scripts"], emu)
 
 
@@ -471,10 +466,12 @@ class RootfsBuilder(BaseConfig):
         self.host_initramfs_list.append((spec, os.path.join(scripts_archive_folder, f"{spec}_host_initramfs-spec.txt")))
 
 # original func is: https://github.com/OpenXiangShan/riscv-rootfs/blob/c61a659b454e5b038b5374a9091b29ad4995f13f/rootfsimg/spec_gen.py#L558
-    def __generate_initramfs(self, scripts_archive_folder, elf_folder, spec, dest_path, using_cpu2017=False, copies=1):
+    def __generate_initramfs(self, scripts_archive_folder, elf_folder, spec, dest_path, using_cpu2017=False, using_jemalloc=True, copies=1):
         spec_config = self.config["spec_info"]
 
         lines = self.config["default_initramfs_file"].copy()
+        lines += ["# libraries"]
+        lines += get_libraries_str(self.config["path_env_vars"]["RISCV"], using_jemalloc)
         if not isinstance(lines, list):
             raise ValueError("lines not a list type value")
 
@@ -490,13 +487,13 @@ class RootfsBuilder(BaseConfig):
 
         lines.append(f"file /spec0/run.sh {scripts_archive_folder}/{spec}_run.sh 755 0 0")
 
-        for i in range(0, copies):
+        for i in range(0, 1):
             elf_file_abspath = os.path.realpath(f"{elf_folder}/{spec_config[spec]['base_name']}")
             lines.append(f"file /spec{i}/{spec_config[spec]['base_name']} {elf_file_abspath} 755 0 0")
 
         for i, filename in enumerate(spec_files):
             if len(filename.split()) == 1:
-                for j in range(0, copies):
+                for j in range(0, 1):
                     target_filename = f"file /spec{j}/{filename.split('/')[-1]} {cpu20xx_run_dir}/{filename} 755 0 0"
                     lines.append(target_filename)
 
@@ -509,13 +506,13 @@ class RootfsBuilder(BaseConfig):
 
                 all_dirs, all_files = self.traverse_path(f"{cpu20xx_run_dir}{path}")
 
-                for i in range(0, copies):
+                for i in range(0, 1):
                     lines.append(f"dir /spec{i}/{name} 755 0 0")
                 for sub_dir in all_dirs:
-                    for i in range(0, copies):
+                    for i in range(0, 1):
                         lines.append(f"dir /spec{i}/{name}/{sub_dir} 755 0 0")
                 for file in all_files:
-                    for i in range(0, copies):
+                    for i in range(0, 1):
                         lines.append(f"file /spec{i}/{name}/{file} {cpu20xx_run_dir}{path}/{file} 755 0 0")
             else:
                 print(f"unknown filename: {filename}")
@@ -551,13 +548,18 @@ class RootfsBuilder(BaseConfig):
 
         lines.append(f"echo '===== Start running {SPEC_20XX} ====='")
         lines.append(f"echo '======== BEGIN {spec} ========'")
+        lines.append("export LD_LIBRARY_PATH=/lib:$LD_LIBRARY_PATH")
+        lines.append("head -c 10 /dev/random | hexdump")
         lines.append("set -x")
 
-        for i in range(0, copies):
+        for i in range(0, 1):
             lines.append(f"md5sum /spec{i}/{spec_bin}")
 
         output_redirect = (" ").join([">", "out.log", "2>", "err.log"]) if redirect_output else ""
         force_output_redirect = (" ").join([">", "out.log", "2>", "err.log"])
+
+        output_redirect_workload_list_cpu2006 = ['xalancbmk']
+        output_redirect_workload_list_cpu2017 = ['perlbench', "povray", "xalancbmk", "leela"]
 
         taskN = []
         for i in range(0, int(copies)):
@@ -569,14 +571,20 @@ class RootfsBuilder(BaseConfig):
             if with_nemu_trap:
                 taskN.append("/spec_common/before_workload")
 
-            if spec_bin in ['xalancbmk']:
-                taskN.append(f'cd /spec{i} && ./{spec_bin} {spec_cmd} {force_output_redirect} ')
+            if using_cpu2017:
+                if spec_bin in output_redirect_workload_list_cpu2017:
+                    taskN.append(f'cd /spec{0} && ./{spec_bin} {spec_cmd} {force_output_redirect} ')
+                else:
+                    taskN.append(f'cd /spec{0} && ./{spec_bin} {spec_cmd} {output_redirect} ')
             else:
-                taskN.append(f'cd /spec{i} && ./{spec_bin} {spec_cmd} {output_redirect} ')
+                if spec_bin in output_redirect_workload_list_cpu2006:
+                    taskN.append(f'cd /spec{0} && ./{spec_bin} {spec_cmd} {force_output_redirect} ')
+                else:
+                    taskN.append(f'cd /spec{0} && ./{spec_bin} {spec_cmd} {output_redirect} ')
 
             taskN.append("date -R")
             if with_nemu_trap:
-                if emu=="NEMU":
+                if emu == "NEMU":
                     taskN.append("/spec_common/trap")
                 else:
                     taskN.append("/spec_common/qemu_trap")
@@ -777,7 +785,7 @@ class RootfsBuilder(BaseConfig):
 
         _, fw_payload_bin = self.kernel_list.pop()
         fw_payload_bin_size = os.path.getsize(fw_payload_bin)
-        fw_payload_fdt_addr = (((fw_payload_bin_size + 0x800000) + 0xfffff) // 0x100000) * 0x100000
+        fw_payload_fdt_addr = (((fw_payload_bin_size + 0x1800000) + 0xfffff) // 0x100000) * 0x100000
         fw_payload_fdt_addr = fw_payload_fdt_addr + 0x80000000
         print(f"SPEC: {spec}, file size: {fw_payload_bin_size:X}, fw_payload_fdt_addr: {fw_payload_fdt_addr:X}")
 
@@ -788,7 +796,7 @@ class RootfsBuilder(BaseConfig):
         if copies == 1:
             fw_payload_offset = 0x100000
         else:
-            fw_payload_offset = 0x700000
+            fw_payload_offset = 0x1700000
 
         shared_opensbi_command.append(
             ["make", "-C", OPENSBI_HOME, f"O={archive_buffer_layout['opensbi']}/build", "PLATFORM=generic", f"FW_PAYLOAD_PATH={fw_payload_bin}", f"FW_FDT_PATH={XIANGSHAN_FDT}", f"FW_PAYLOAD_OFFSET={fw_payload_offset}", f"FW_PAYLOAD_FDT_ADDR={fw_payload_fdt_addr}", "-j10"])

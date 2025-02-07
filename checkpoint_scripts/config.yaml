@@ -1,14 +1,14 @@
 base_config:
   message: "NULL"
-  spec_app_list: null
-  spec_apps: "cactusADM,tonto"
-  elf_folder: "./jemalloc_elf"
+  spec_app_list: "/nfs/home/share/jiaxiaoyu/dual_core_checkpoint/checkpoint_scripts/checkpoint_scripts/spec2k17.lst"
+  spec_apps: null
+  elf_folder: "/nfs/home/share/jiaxiaoyu/checkpoint/spec17_checkpoint/spec17_gcc12.2.0_rv64gcb"
   times: "1,1,1"
   start_id: "0,0,0"
   emulator: "QEMU"
   build_bbl_only: true
-  max_threads: 70
-  CPU2017: false
+  max_threads: 60
+  CPU2017: true
   generate_rootfs_script_only: false
   copies: 2
   archive_id: null
@@ -17,11 +17,12 @@ base_config:
   mem_bind: 0
   bootloader: "opensbi"
   all_in_one_workload: true
-  boot_for_test: false
+  boot_for_test: true
   enable_h_ext: false
+  using_jemalloc: true
 archive_id_config:
   gcc_version: "gcc12.2.0"
   riscv_ext: "rv64gcb"
   base_or_fixed: "base"
-  special_flag: "intFppOff_for_qemu_dual_core"
+  special_flag: "intFppOff_for_spec17_dual_core"
   group: "archgroup"
