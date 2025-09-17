@@ -1,0 +1,311 @@
+{
+    "bwaves_1": {
+        "base_name": "bwaves",
+        "files": [
+            "bwaves/bwaves_2.in",
+            "bwaves/control",
+            "bwaves/bwaves_1.in",
+        ],
+        "args": [
+            "bwaves_1",
+            "<",
+            "bwaves_1.in"
+        ],
+        "type": [
+            "fp",
+            "ref"
+        ]
+    },
+    "bwaves_2": {
+        "base_name": "bwaves",
+        "files": [
+            "bwaves/bwaves_2.in",
+            "bwaves/control",
+            "bwaves/bwaves_1.in",
+        ],
+        "args": [
+            "bwaves_2",
+            "<",
+            "bwaves_2.in"
+        ],
+        "type": [
+            "fp",
+            "ref"
+        ]
+    },
+    "cactuBSSN": {
+        "base_name": "cactuBSSN",
+        "files": [
+            "cactuBSSN/control",
+            "cactuBSSN/spec_ref.par"
+        ],
+        "args": [
+            "spec_ref.par"
+        ],
+        "type": [
+            "fp",
+            "ref"
+        ]
+    },
+    "cam4": {
+        "base_name": "cam4",
+        "files": [
+          "cam4/abs_ems_factors_fastvx.c030508.nc",
+          "cam4/aero_1.9x2.5_L26_2000clim_c091112.nc",
+          "cam4/atm_in",
+          "cam4/bcphi_camrt_c080918.nc",
+          "cam4/bcpho_camrt_c080918.nc",
+          "cam4/cami_0000-01-01_1.9x2.5_L26_APE_c080203.nc",
+          "cam4/clim_p_trop.nc",
+          "cam4/drv_flds_in",
+          "cam4/drv_in",
+          "cam4/dust1_camrt_c080918.nc",
+          "cam4/dust2_camrt_c080918.nc",
+          "cam4/dust3_camrt_c080918.nc",
+          "cam4/dust4_camrt_c080918.nc",
+          "cam4/ocphi_camrt_c080918.nc",
+          "cam4/ocpho_camrt_c080918.nc",
+          "cam4/ozone_1.9x2.5_L26_2000clim_c091112.nc",
+          "cam4/ssam_camrt_c080918.nc",
+          "cam4/sscm_camrt_c080918.nc",
+          "cam4/sulfate_camrt_c080918.nc",
+          "cam4/USGS-gtopo30_1.9x2.5_remap_c050602.nc",
+        ],
+        "args": [],
+        "type": [
+            "fp",
+            "ref"
+        ]
+    },
+    "fotonik3d": {
+        "base_name": "fotonik3d",
+        "files": [
+          "fotonik3d/incident_W3PC_25nm.def",
+          "fotonik3d/inputgen.cmd",
+          "fotonik3d/inputgen.err",
+          "fotonik3d/inputgen.out",
+          "fotonik3d/inputgen.stdout",
+          "fotonik3d/OBJ.dat",
+          "fotonik3d/OBJ.dat.gen.err",
+          "fotonik3d/OBJ.dat.xz",
+          "fotonik3d/power1.dat",
+          "fotonik3d/power2.dat",
+          "fotonik3d/PSI.dat",
+          "fotonik3d/TEwaveguide.m",
+          "fotonik3d/trans_W3PC_25nm.def",
+          "fotonik3d/yee.dat",
+        ],
+        "args": [],
+        "type": [
+            "fp",
+            "ref"
+        ]
+    },
+    "imagick": {
+        "base_name": "imagick",
+        "files": [
+            "imagick/control",
+            "imagick/refspeed_input.tga"
+        ],
+        "args": [
+            "-limit",
+            "disk",
+            "0",
+            "refspeed_input.tga",
+            "-resize",
+            "817%",
+            "-rotate",
+            "-2.76",
+            "-shave",
+            "540x375",
+            "-alpha",
+            "remove",
+            "-auto-level",
+            "-contrast-stretch",
+            "1x1%",
+            "-colorspace",
+            "Lab",
+            "-channel",
+            "R",
+            "-equalize",
+            "+channel",
+            "-colorspace",
+            "sRGB",
+            "-define",
+            "histogram:unique-colors=false",
+            "-adaptive-blur",
+            "0x5",
+            "-despeckle",
+            "-auto-gamma",
+            "-adaptive-sharpen",
+            "55",
+            "-enhance",
+            "-brightness-contrast",
+            "10x10",
+            "-resize",
+            "30%",
+            "refspeed_output.tga",
+        ],
+        "type": [
+            "fp",
+            "ref"
+        ]
+    },
+    "nab": {
+        "base_name": "nab",
+        "files": [
+            "nab/control",
+            "dir 3j1n /nab/3j1n",
+            "nab/3j1n/3j1n.pdb",
+            "nab/3j1n/3j1n.prm"
+        ],
+        "args": [
+            "3j1n",
+            "20140317",
+            "220"
+        ],
+        "type": [
+            "fp",
+            "ref"
+        ]
+    },
+
+    "roms": {
+        "base_name": "roms",
+        "files": [
+            "roms/ocean_benchmark3.in.x",
+            "roms/ocean_benchmark3.in",
+            "roms/varinfo.dat"
+        ],
+        "args": [
+            "<",
+            "ocean_benchmark3.in.x"
+        ],
+        "type": [
+            "fp",
+            "ref"
+        ]
+    },
+
+    "wrf": {
+        "base_name": "wrf",
+        "files": [
+          "wrf/CAM_ABS_DATA",
+          "wrf/CAM_AEROPT_DATA",
+          "wrf/co2_trans",
+          "wrf/control",
+          "wrf/ETAMPNEW_DATA",
+          "wrf/GENPARM.TBL",
+          "wrf/grib2map.tbl",
+          "wrf/gribmap.txt",
+          "wrf/LANDUSE.TBL",
+          "wrf/namelist.input",
+          "wrf/OBS_DOMAIN101",
+          "wrf/OBS_DOMAIN201",
+          "wrf/ozone.formatted",
+          "wrf/ozone_lat.formatted",
+          "wrf/ozone_plev.formatted",
+          "wrf/RRTM_DATA",
+          "wrf/RRTMG_LW_DATA",
+          "wrf/RRTMG_SW_DATA",
+          "wrf/SOILPARM.TBL",
+          "wrf/tr49t67",
+          "wrf/tr49t85",
+          "wrf/tr67t85",
+          "wrf/URBPARM.TBL",
+          "wrf/VEGPARM.TBL",
+          "wrf/VEGPARM.TBLa",
+          "wrf/wrfbdy_d01",
+          "wrf/wrfinput_d01",
+          "wrf/wrfsfdda_d01",
+        ],
+        "args": [],
+        "type": [
+            "fp",
+            "ref"
+        ]
+    },
+    "pop2": {
+      "base_name": "pop2",
+      "files": [
+        "pop2/atm_modelio.nml",
+        "pop2/chl_mm_SeaWiFs97-01_20031205.ieeer8",
+        "pop2/COREv2.correction_factors.T62.121007.nc",
+        "pop2/cpl_modelio.nml",
+        "pop2/datm_atm_in",
+        "pop2/datm_in",
+        "pop2/dice_ice_in",
+        "pop2/dice_in",
+        "pop2/dlnd_in",
+        "pop2/dlnd_lnd_in",
+        "pop2/dlnd_rof_in",
+        "pop2/dlnd_sno_in",
+        "pop2/domain.lnd.fv4x5_gx3v7.091218.nc",
+        "pop2/domain.ocn.gx3v7.090903.nc",
+        "pop2/domain.ocn.x0.5.090227.nc",
+        "pop2/drv_in",
+        "pop2/drv_in.in",
+        "pop2/glc_modelio.nml",
+        "pop2/gx3v7_depth_accel",
+        "pop2/gx3v7_history_contents",
+        "pop2/gx3v7_movie_contents",
+        "pop2/gx3v7_overflow",
+        "pop2/gx3v7_region_ids",
+        "pop2/gx3v7_tavg_contents",
+        "pop2/gx3v7_transport_contents",
+        "pop2/gx3v7_vert_grid",
+        "pop2/horiz_grid_20030806.ieeer8",
+        "pop2/HorizontalSanity.txt",
+        "pop2/ice_modelio.nml",
+        "pop2/lnd_modelio.nml",
+        "pop2/map_fv4x5_to_gx3v7_aave_da_091218.nc",
+        "pop2/map_fv4x5_to_gx3v7_bilin_da_091218.nc",
+        "pop2/map_gx3v7_to_fv4x5_aave_da_091218.nc",
+        "pop2/map_rx1_to_gx3v5_e1000r500_090319.nc",
+        "pop2/nyf.giss.T62.051007.nc",
+        "pop2/nyf.giss.T62.stream.txt",
+        "pop2/nyf.gxgxs.T62.051007.nc",
+        "pop2/nyf.gxgxs.T62.stream.txt",
+        "pop2/nyf.ncep.T62.050923.nc",
+        "pop2/nyf.ncep.T62.stream.txt",
+        "pop2/ocn_modelio.nml",
+        "pop2/pop2_in",
+        "pop2/pop2_in.org",
+        "pop2/region_mask_20090831.ieeei4",
+        "pop2/runoff.1x1.stream.txt",
+        "pop2/runoff.daitren.annual.090225.nc",
+        "pop2/seq_maps.rc",
+        "pop2/sfwf_mm_PHC2_salx_flxio_20090831.ieeer8",
+        "pop2/shf_20090831.ieeer8",
+        "pop2/ssmi_ifrac.clim.x0.5.090319.nc",
+        "pop2/ssmi_ifrac.clim.x0.5.txt",
+        "pop2/tidal_energy_gx3v7_20100107.ieeer8",
+        "pop2/topography_20100105.ieeei4",
+        "pop2/ts_PHC2_jan_ic_gx3v7_20100107.ieeer8"
+      ],
+      "args": [
+      ],
+      "type": [
+        "fp",
+        "ref"
+      ]
+    },
+    "lbm": {
+        "base_name": "lbm",
+        "files": [
+            "lbm/200_200_260_ldc.of",
+            "lbm/lbm.in"
+        ],
+        "args": [
+            "2000",
+            "reference.dat",
+            "0",
+            "0",
+            "200_200_260_ldc.of"
+        ],
+        "type": [
+            "fp",
+            "ref"
+        ]
+    },
+}
